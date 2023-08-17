@@ -1,0 +1,110 @@
+---
+- name: Configure NXOS device 
+  hosts: nxosv2
+  gather_facts: no
+
+  tasks:
+
+  - name: Backup Config
+    cisco.nxos.nxos_config:
+      backup: true
+
+
+  - name: Configure NTP
+    block:
+    - name: Print out ntp configuration
+      ansible.builtin.debug:
+        msg: "{{ ntp_global }}"
+        verbosity: 2
+
+    - name: Combine host and group defined VLANs
+      ansible.builtin.set_fact:
+        device_vlans: "{{ ntp_global + ( group_ntp_global | default([])) }}"
+  
+    - name: Update NTP Configuration
+      cisco.nxos.nxos_ntp_global:
+        config: "{{ ntp_global }}"
+        state: replaced
+      register: ntp_global_changes
+ 
+    - name: Print out NTP changes
+      ansible.builtin.debug:
+        msg: "{{ ntp_global_changes }}"
+        verbosity: 2
+    # End of NTP block tasks
+    tags:
+      - never
+      - ntp
+
+
+  - name: Configure VLANs
+    block:
+    - name: Print out host defined VLANs
+      ansible.builtin.debug:
+        var: vlans
+        verbosity: 2
+  
+    - name: Print out group defined VLANs
+      ansible.builtin.debug:
+        var: group_network.vlans
+        verbosity: 2
+  
+    - name: Combine host and group defined VLANs
+      ansible.builtin.set_fact:
+        device_vlans: "{{ vlans + ( group_network_config.vlans | default([])) }}"
+  
+    - name: Make VLAN config changes by updating stored facts on the controller.
+      cisco.nxos.nxos_vlans:
+        config: "{{ device_vlans }}"
+        state: replaced
+        #state: overridden
+    # End of VLAN block tasks
+    tags:
+      - never
+      - vlans
+
+
+  - name: Configure interfaces
+    block:
+    - name: Print out interfaces
+      ansible.builtin.debug:
+        msg: "{{ interfaces }}"
+        verbosity: 2
+
+    - name: Make interface config changes based on host_vars data
+      cisco.nxos.nxos_interfaces:
+        config: "{{ interfaces }}"
+        state: merged
+      register: result
+
+    - name: Print changes
+      ansible.builtin.debug:
+        msg: "{{ result.commands }}"
+        verbosity: 2
+    # End of interfaces block tasks
+    tags:
+      - never
+      - interfaces
+
+
+  - name: Configure L3 interface
+    block:
+    - name: Print out L3 interfaces
+      ansible.builtin.debug:
+        msg: "{{ l3_interfaces }}"
+        verbosity: 2
+
+    - name: Make L3 interface config changes based on host_vars data
+      cisco.nxos.nxos_l3_interfaces:
+        config: "{{ l3_interfaces }}"
+        state: merged
+      register: result
+      #check_mode: true
+
+    - name: Print change
+      ansible.builtin.debug:
+        msg: "{{ result.commands }}"
+    # end of l3_interfaces block tasks
+    tags:
+      - never
+      - l3_interfaces

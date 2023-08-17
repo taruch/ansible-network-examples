@@ -1,0 +1,47 @@
+---
+- name: Gather configuration information from NXOS devices
+  hosts: nxosv2
+  gather_facts: no
+
+  tasks:
+  - name: Backup Config
+    cisco.nxos.nxos_config:
+      backup: true
+    tags:
+      - never
+      - backup
+
+  - name: Gather network information as structured data
+    cisco.nxos.nxos_facts:
+      gather_network_resources:
+        - 'static_routes'
+        - 'ntp_global'
+        - 'logging_global'
+        - 'hostname'
+        - 'snmp_server'
+        - 'vlans'
+        - 'interfaces'
+        - 'l2_interfaces'
+        - 'l3_interfaces'
+      gather_subset:
+        - '!min'
+        - '!all'
+    #register: resut
+    #register: ansible_network_resources
+
+  - name: Print out
+    ansible.builtin.debug:
+      msg: "{{ ansible_network_resources }}"
+      #var: ansible_facts.ansible_network_resources
+      verbosity: 2
+
+  - name: Store VLAN facts to host_vars
+    ansible.builtin.copy:
+      content: "{{ ansible_network_resources | to_nice_yaml }}"
+      dest: "./host_vars/{{ inventory_hostname }}"
+    delegate_to: localhost 
+    register: result
+
+  - name: Ensure config did not change
+    ansible.builtin.assert: 
+      that: not result.changed

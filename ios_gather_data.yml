@@ -1,0 +1,52 @@
+---
+- name: Gather configuration information from NXOS devices
+  hosts: nxosv2
+  gather_facts: no
+
+  tasks:
+  - name: Backup Config
+    cisco.nxos.nxos_config:
+      backup: true
+
+  - name: Gather network information as structured data
+    cisco.nxos.nxos_facts:
+      gather_network_resources:
+        - 'static_routes'
+        - 'ntp_global'
+        - 'logging_global'
+        - 'hostname'
+        - 'snmp_server'
+        - 'vlans'
+        - 'interfaces'
+        - 'l2_interfaces'
+        - 'l3_interfaces'
+      #gather_subset:
+        #- '!min'
+        #- all
+    register: ansible_network_resources
+
+  - name: Print out
+    ansible.builtin.debug:
+      var: ansible_network_resources
+
+  - name: Store VLAN facts to host_vars
+    ansible.builtin.copy:
+      content: "{{ ansible_network_resources | to_nice_yaml }}"
+      dest: "./host_vars/{{ inventory_hostname }}"
+    delegate_to: localhost 
+
+#  - name: diff two configs
+#    #When this option is configured as intended, the module will return the diff of the 
+#    #running-config against the configuration provided in the intended_config argument.
+#    cisco.ios.ios_config:
+#      diff_against: intended
+#      intended_config: "{{ l3_interfaces }}"
+#
+#
+#  - name: Make VLAN config changes by updating stored facts on the controller.
+#    cisco.ios.l3_interfaces:
+#      config: "{{ l3_interfaces }}"
+#      state: merged
+#    #tags: update_config
+#    check_mode: true
+#

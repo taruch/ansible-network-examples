@@ -1,0 +1,99 @@
+---
+- name: Use case 1 - Network Compliance
+  hosts: nexus
+  gather_facts: no
+
+  tasks:
+    - name: block for applying SNMP and NTP config 
+      block:
+        - name: Replace snmp-server configurations of listed snmp-server with provided configurations
+          cisco.nxos.nxos_snmp_server:
+            config:
+              aaa_user:
+                cache_timeout: 36000
+              communities:
+                - community: secret
+                  group: network-operator
+              contact: nxosswitchadmin2@localhost
+              location: serverroom-2
+              traps:
+                aaa:
+                  server_state_change: True
+              hosts:
+                - host: 192.0.2.1
+                  traps: True
+                  version: '1'
+                  community: public
+                - host: 192.0.2.1
+                  source_interface: Ethernet1/1
+                - host: 192.0.3.2
+                  informs: True
+                  version: '3'
+                  auth: NMS
+              users:
+                auth:
+                  - user: admin
+                    group: network-admin
+                    authentication:
+                      algorithm: md5
+                      password: "0xcbde46b02c46e0bcd3ac5af6a8b13da9"
+                      localized_key: True
+                      priv:
+                        privacy_password: "0xcbde46b02c46e0bcd3ac5af6a8b13da9"
+        
+                  - user: snmp_user_1
+                    group: network-operator
+                    authentication:
+                      algorithm: md5
+                      password: '0x5632724fb8ac3699296af26281e1d0f1'
+                      localized_key: True
+        
+                  - user: snmp_user_2
+                    group: network-operator
+                    authentication:
+                      algorithm: md5
+                      password: '0x5632724fb8ac3699296af26281e1d0f1'
+                      localized_key: True
+                      priv:
+                        privacy_password: '0x5632724fb8ac3699296af26281e1d0f1'
+                        aes_128: True
+                use_acls:
+                  - user: snmp_user_1
+                    ipv4: acl1
+                    ipv6: acl2
+            state: replaced
+          register: snmp_config
+
+        - name: Print SNMP out
+          ansible.builtin.debug:
+            var: snmp_config
+            verbosity: 2
+
+        - name: Configure NTP
+          cisco.nxos.nxos_ntp_global:
+            config:
+              logging: true
+              master: 
+                stratum: 2
+              servers:
+                - server: 132.163.97.1
+                  #time-a-wwv.nist.gov	
+                  vrf: default
+                - server: 132.163.97.2
+                  #time-b-wwv.nist.gov	
+                  vrf: default
+            state: replaced
+          register: ntp_global
+
+        - name: Print NTP out
+          ansible.builtin.debug:
+            var: ntp_global
+            verbosity: 2
+
+      notify: changed
+
+  handlers: 
+    - name: changed
+      ansible.builtin.debug:
+        msg: "something changed"
+

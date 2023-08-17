@@ -1,0 +1,20 @@
+---
+ansible_pub_key: >
+  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDdsz8oJxPhOpNF7aKJ14voMfAXEcEBCDsWVAPKtNTgsmPBQOIfyv8c2eO1DRVTo0MIUDQrxnAHKHgyvKkf1xjyG8k5QFwZRkNzanzyC/9p33ANrGNtaA37px81xEIhQhnJEBwfSAaz6p9GcZfkBykUq6THSYYoPvbaR9QuyNcYn02Csh4+u4uV07Pa2+apcQ1vevTJT+TzzCzWy6Pl3vA++RnFcH8//bqFvV++kUHRvXnwtc8/2w8Rdhtzvy8E5EQXuQwrQoJPOhLvFwjM881c8TAZsaPHQUVQvCc9TgDNlW9VtmA1BlBC3Rxlr5LSWWq2RgMuVnyowPxsHhYU9c0N truch@laptop.entrenchedrealist.com
+group_network_config:
+  vlans:
+    - enabled: true
+      name: "openstack_010"
+      state: "active"
+      vlan_id: 10
+group_ntp_global:
+  logging: true
+  master:
+    stratum: 2
+  servers:
+    - server: 132.163.97.1
+      #time-a-wwv.nist.gov
+      vrf: default
+    - server: 132.163.97.2
+      #time-b-wwv.nist.gov
+      vrf: default
