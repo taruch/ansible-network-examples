@@ -5,13 +5,14 @@
 
   tasks:
   - name: Backup Config
-    cisco.nxos.nxos_config:
+    cisco.ios.ios_config:
       backup: true
 
+‘bgp_global’, ‘l3_interfaces’, ‘lag_interfaces’, ‘ntp_global’, ‘acls’, ‘hostname’, ‘interfaces’, ‘lldp_interfaces’, ‘logging_global’, ‘ospf_interfaces’, ‘ospfv2’, ‘prefix_lists’, ‘static_routes’, ‘acl_interfaces’, ‘all’, ‘bgp_address_family’, ‘l2_interfaces’, ‘lacp’, ‘lacp_interfaces’, ‘lldp_global’, ‘ospfv3’, ‘snmp_server’, ‘vlans’, ‘service’
+
   - name: Gather network information as structured data
-    cisco.nxos.nxos_facts:
+    cisco.ios.ios_facts:
       gather_network_resources:
-        - 'static_routes'
         - 'ntp_global'
         - 'logging_global'
         - 'hostname'
@@ -20,6 +21,20 @@
         - 'interfaces'
         - 'l2_interfaces'
         - 'l3_interfaces'
+        - 'lag_interfaces'
+        - 'lldp_interfaces'
+        - 'lldp_global'
+        - 'lacp'
+        - 'lacp_interfaces'
+        - 'service'
+        - 'bgp_global'
+        - 'bgp_address_family'
+        - 'ospf_interfaces'
+        - 'ospfv2'
+        - 'ospfv3'
+        - 'prefix_lists'
+        - 'static_routes'
+        - 'acl_interfaces'
       #gather_subset:
         #- '!min'
         #- all
@@ -34,19 +49,3 @@
       content: "{{ ansible_network_resources | to_nice_yaml }}"
       dest: "./host_vars/{{ inventory_hostname }}"
     delegate_to: localhost 
-
-#  - name: diff two configs
-#    #When this option is configured as intended, the module will return the diff of the 
-#    #running-config against the configuration provided in the intended_config argument.
-#    cisco.ios.ios_config:
-#      diff_against: intended
-#      intended_config: "{{ l3_interfaces }}"
-#
-#
-#  - name: Make VLAN config changes by updating stored facts on the controller.
-#    cisco.ios.l3_interfaces:
-#      config: "{{ l3_interfaces }}"
-#      state: merged
-#    #tags: update_config
-#    check_mode: true
-#

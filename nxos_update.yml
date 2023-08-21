@@ -19,7 +19,7 @@
 
     - name: Combine host and group defined VLANs
       ansible.builtin.set_fact:
-        device_vlans: "{{ ntp_global + ( group_ntp_global | default([])) }}"
+        device_vlans: "{{ ntp_global | combine ( group_ntp_global | default({})) }}"
   
     - name: Update NTP Configuration
       cisco.nxos.nxos_ntp_global:

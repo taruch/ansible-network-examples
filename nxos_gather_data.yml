@@ -26,8 +26,6 @@
       gather_subset:
         - '!min'
         - '!all'
-    #register: resut
-    #register: ansible_network_resources
 
   - name: Print out
     ansible.builtin.debug:
