@@ -37,7 +37,7 @@
     delegate_to: laptop.remote.csb
     ansible.builtin.copy:
       content: "{{ ansible_network_resources | to_nice_yaml }}"
-      dest: "/tmp/{{ inventory_hostname }}"
+      dest: "/home/admin/tmp/{{ inventory_hostname }}"
     register: result
 
   - name: Ensure config did not change
