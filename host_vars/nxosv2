@@ -134,9 +134,11 @@ l2_interfaces:
 -   name: Ethernet1/62
 -   name: Ethernet1/63
 -   name: Ethernet1/64
+    vlan: 10-12
 -   name: mgmt0
 -   name: loopback0
 -   name: loopback1
+-   name: loopback2
 l3_interfaces:
 -   name: Ethernet1/1
 -   name: Ethernet1/2
