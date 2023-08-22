@@ -11,6 +11,10 @@ group_network_config:
       name: "openstack_011"
       state: "active"
       vlan_id: 11
+    - enabled: true
+      name: "openstack_012"
+      state: "active"
+      vlan_id: 12
 group_ntp_global:
   logging: true
   master:
