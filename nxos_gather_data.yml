@@ -38,7 +38,6 @@
       content: "{{ ansible_network_resources | to_nice_yaml }}"
       dest: "/home/truch/Ansible-Repos/ansible-network-examples/host_vars/{{ inventory_hostname }}"
     delegate_to: laptop.remote.csb
-    ansible_user: truch
     register: result
 
   - name: Ensure config did not change
