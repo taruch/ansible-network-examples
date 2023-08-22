@@ -57,6 +57,7 @@
         config: "{{ device_vlans }}"
         state: replaced
         #state: overridden
+      register: result
 
     - name: Print any VLAN configuration changes
       ansible.builtin.debug:
