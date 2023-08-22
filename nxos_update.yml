@@ -84,7 +84,28 @@
     - name: Print any interface configuration changes
       ansible.builtin.debug:
         msg: "{{ result.commands }}"
+    # End of interfaces block tasks
+    tags:
+      - never
+      - interfaces
+
+
+  - name: Configure l2 interfaces
+    block:
+    - name: Print out interfaces
+      ansible.builtin.debug:
+        msg: "{{ l2_interfaces }}"
         verbosity: 2
+
+    - name: Make interface config changes based on host_vars data
+      cisco.nxos.nxos_l2_interfaces:
+        config: "{{ l2_interfaces }}"
+        state: merged
+      register: result
+
+    - name: Print any interface configuration changes
+      ansible.builtin.debug:
+        msg: "{{ result.commands }}"
     # End of interfaces block tasks
     tags:
       - never
@@ -112,3 +133,5 @@
     tags:
       - never
       - l3_interfaces
+
+...
