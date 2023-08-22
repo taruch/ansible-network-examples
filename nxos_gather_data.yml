@@ -34,10 +34,10 @@
       verbosity: 2
 
   - name: Store VLAN facts to host_vars
-    delegate_to: laptop.remote.csb
+    delegate_to: localhost
     ansible.builtin.copy:
       content: "{{ ansible_network_resources | to_nice_yaml }}"
-      dest: "/home/admin/tmp/{{ inventory_hostname }}"
+      dest: "/home/truch/Ansible-Repos/ansible-network-examples/host_vars/{{ inventory_hostname }}"
     register: result
 
   - name: Ensure config did not change

@@ -1,5 +1,5 @@
 hostname:
-    hostname: nxosv2
+    hostname: nxosv1
 interfaces:
 -   name: Ethernet1/1
 -   name: Ethernet1/2
@@ -68,8 +68,6 @@ interfaces:
 -   description: OOB Management
     name: mgmt0
 -   name: loopback0
--   name: loopback1
--   name: loopback2
 l2_interfaces:
 -   name: Ethernet1/1
 -   name: Ethernet1/2
@@ -137,8 +135,6 @@ l2_interfaces:
 -   name: Ethernet1/64
 -   name: mgmt0
 -   name: loopback0
--   name: loopback1
--   name: loopback2
 l3_interfaces:
 -   name: Ethernet1/1
 -   name: Ethernet1/2
@@ -205,29 +201,11 @@ l3_interfaces:
 -   name: Ethernet1/63
 -   name: Ethernet1/64
 -   ipv4:
-    -   address: 198.18.1.52/24
+    -   address: 198.18.1.51/24
     name: mgmt0
--   ipv4:
-    -   address: 192.168.100.1/24
-    name: loopback0
--   ipv4:
-    -   address: 192.168.101.1/24
-    name: loopback1
--   ipv4:
-    -   address: 192.168.102.1/24
-    name: loopback2
+-   name: loopback0
 logging_global: {}
-ntp_global:
-    logging: true
-    master:
-        stratum: 2
-    servers:
-    -   server: 132.163.97.1
-        vrf: default
-    -   server: 132.163.97.2
-        vrf: default
-    -   server: 132.163.97.3
-        vrf: default
+ntp_global: {}
 snmp_server:
     users:
         auth:
@@ -283,23 +261,3 @@ vlans:
     name: default
     state: active
     vlan_id: 1
--   enabled: true
-    mode: ce
-    name: openstack_003
-    state: active
-    vlan_id: 3
--   enabled: true
-    mode: ce
-    name: openstack_010
-    state: active
-    vlan_id: 10
--   enabled: true
-    mode: ce
-    name: openstack_011
-    state: active
-    vlan_id: 11
--   enabled: true
-    mode: ce
-    name: openstack_012
-    state: active
-    vlan_id: 12
