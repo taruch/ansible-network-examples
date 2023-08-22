@@ -25,12 +25,11 @@
       cisco.nxos.nxos_ntp_global:
         config: "{{ ntp_global }}"
         state: replaced
-      register: ntp_global_changes
- 
-    - name: Print out NTP changes
+      register: result
+
+    - name: Print any NTP configuration changes
       ansible.builtin.debug:
-        msg: "{{ ntp_global_changes }}"
-        verbosity: 2
+        msg: "{{ result.commands }}"
     # End of NTP block tasks
     tags:
       - never
@@ -58,6 +57,10 @@
         config: "{{ device_vlans }}"
         state: replaced
         #state: overridden
+
+    - name: Print any VLAN configuration changes
+      ansible.builtin.debug:
+        msg: "{{ result.commands }}"
     # End of VLAN block tasks
     tags:
       - never
@@ -77,7 +80,7 @@
         state: merged
       register: result
 
-    - name: Print changes
+    - name: Print any interface configuration changes
       ansible.builtin.debug:
         msg: "{{ result.commands }}"
         verbosity: 2
@@ -101,7 +104,7 @@
       register: result
       #check_mode: true
 
-    - name: Print change
+    - name: Print any L3 interface configuration changes
       ansible.builtin.debug:
         msg: "{{ result.commands }}"
     # end of l3_interfaces block tasks
