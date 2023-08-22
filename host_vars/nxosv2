@@ -211,6 +211,9 @@ l3_interfaces:
 -   name: loopback1
     ipv4:
     -   address: 192.168.101.1/24
+-   name: loopback2
+    ipv4:
+    -   address: 192.168.102.1/24
 logging_global: {}
 ntp_global:
     logging: true
@@ -221,6 +224,9 @@ ntp_global:
         #time-a-wwv.nist.gov
         vrf: default
       - server: 132.163.97.2
+        #time-b-wwv.nist.gov
+        vrf: default
+      - server: 132.163.97.3
         #time-b-wwv.nist.gov
         vrf: default
 
