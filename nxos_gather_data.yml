@@ -34,7 +34,7 @@
       verbosity: 2
 
   - name: Store VLAN facts to host_vars
-    delegate_to: laptop.remote.csb
+    delegate_to: githost
     run_once: true
     ansible.builtin.copy:
       content: "{{ ansible_network_resources | to_nice_yaml }}"
