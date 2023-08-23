@@ -1,6 +1,6 @@
 ---
 - name: Configure NXOS device 
-  hosts: nxosv2
+  hosts: nexus
   gather_facts: no
 
   tasks:
