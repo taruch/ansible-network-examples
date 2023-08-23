@@ -35,6 +35,7 @@
 
   - name: Store VLAN facts to host_vars
     delegate_to: laptop.remote.csb
+    run_once: true
     ansible.builtin.copy:
       content: "{{ ansible_network_resources | to_nice_yaml }}"
       dest: "/home/admin/{{ inventory_hostname }}"
