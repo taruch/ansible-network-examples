@@ -4,3 +4,4 @@ nxosv2 ansible_host=198.18.1.52 ansible_user=admin
 
 [laptop]
 laptop ansible_host=192.168.68.119 ansible_connection=ssh ansible_user=admin ansible_password=admin
+laptop.remote.csb ansible_host=192.168.68.119 ansible_connection=ssh ansible_user=admin ansible_password=admin
