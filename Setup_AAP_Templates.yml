@@ -1,0 +1,163 @@
+- name: Create Network templates in AAP
+  hosts: localhost
+  gather_facts: false
+  collections:
+  - ansible.controller
+  vars:
+  - ServiceNow_Credential: "network_Splunk_Ansible_SNOW_Workflow"
+
+  environment:
+    CONTROLLER_HOST: "{{ controller }}"
+    CONTROLLER_USERNAME: "{{ user }}"
+    CONTROLLER_PASSWORD: "{{ pass }}"
+    CONTROLLER_VERIFY_SSL: False
+
+  tasks:
+
+  - name: Add inventory localhost
+    ansible.controller.inventory:
+      name: "localhost"
+      description: "Localhost for API calls"
+      organization: "Default"
+      state: present
+
+  - name: Create NXOS Gather Data Template
+    ansible.controller.job_template:
+      name: "ITSM Create Change Ticket"
+      job_type: "run"
+      organization: "Default"
+      inventory: "localhost"
+      project: "ServiceNow Demo Examples"
+      execution_environment: "Default execution environment"
+      playbook: "itsm_change_create.yml"
+      credentials:
+        - "{{ ServiceNow_Credential }}"
+      extra_vars:
+      state: "present"
+    register: job
+
+  - name: Print job output
+    ansible.builtin.debug:
+      var: job
+      verbosity: 3
+
+  - name: Create ITSM Update Change Ticket Template
+    ansible.controller.job_template:
+      name: "ITSM Update Change Ticket"
+      job_type: "run"
+      organization: "Default"
+      inventory: "localhost"
+      project: "ServiceNow Demo Examples"
+      execution_environment: "Default execution environment"
+      playbook: "itsm_change_update.yml"
+      credentials:
+        - "{{ ServiceNow_Credential }}"
+      extra_vars:
+      state: "present"
+    register: job
+
+  - name: Print job output
+    ansible.builtin.debug:
+      var: job
+      verbosity: 3
+
+  - name: Create ITSM Close Change Ticket Template
+    ansible.controller.job_template:
+      name: "ITSM Close Change Ticket"
+      job_type: "run"
+      organization: "Default"
+      inventory: "localhost"
+      project: "ServiceNow Demo Examples"
+      execution_environment: "Default execution environment"
+      playbook: "itsm_change_close.yml"
+      credentials:
+        - "{{ ServiceNow_Credential }}"
+      extra_vars:
+      state: "present"
+    register: job
+
+  - name: Print job output
+    ansible.builtin.debug:
+      var: job
+      verbosity: 3
+
+  - name: Create ITSM Create Incident Ticket Template
+    ansible.controller.job_template:
+      name: "ITSM Close Incident Ticket"
+      job_type: "run"
+      organization: "Default"
+      inventory: "localhost"
+      project: "ServiceNow Demo Examples"
+      execution_environment: "Default execution environment"
+      playbook: "itsm_incident_create.yml"
+      credentials:
+        - "{{ ServiceNow_Credential }}"
+      extra_vars:
+      state: "present"
+    register: job
+
+  - name: Print job output
+    ansible.builtin.debug:
+      var: job
+      verbosity: 3
+
+  - name: Create ITSM CMDB CI Add Template
+    ansible.controller.job_template:
+      name: "ITSM CMDB CI Add"
+      job_type: "run"
+      organization: "Default"
+      inventory: "localhost"
+      project: "ServiceNow Demo Examples"
+      execution_environment: "Default execution environment"
+      playbook: "itsm_cmdb_add.yml"
+      credentials:
+        - "{{ ServiceNow_Credential }}"
+      extra_vars:
+      state: "present"
+    register: job
+
+  - name: Print job output
+    ansible.builtin.debug:
+      var: job
+      verbosity: 3
+
+  - name: Create ITSM CMDB CI Update Template
+    ansible.controller.job_template:
+      name: "ITSM CMDB CI Update Ticket"
+      job_type: "run"
+      organization: "Default"
+      inventory: "localhost"
+      project: "ServiceNow Demo Examples"
+      execution_environment: "Default execution environment"
+      playbook: "itsm_cmdb_update.yml"
+      credentials:
+        - "{{ ServiceNow_Credential }}"
+      extra_vars:
+      state: "present"
+    register: job
+
+  - name: Print job output
+    ansible.builtin.debug:
+      var: job
+      verbosity: 3
+
+  - name: Create ITSM CMDB CI List Template
+    ansible.controller.job_template:
+      name: "ITSM CMDB CI List"
+      job_type: "run"
+      organization: "Default"
+      inventory: "localhost"
+      project: "ServiceNow Demo Examples"
+      execution_environment: "Default execution environment"
+      playbook: "itsm_cmdb_list.yml"
+      credentials:
+        - "{{ ServiceNow_Credential }}"
+      extra_vars:
+      state: "present"
+    register: job
+
+  - name: Print job output
+    ansible.builtin.debug:
+      var: job
+      verbosity: 3
+

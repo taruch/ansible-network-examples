@@ -17,7 +17,7 @@
         msg: "{{ ntp_global }}"
         verbosity: 2
 
-    - name: Combine host and group defined VLANs
+    - name: Combine host and group defined NTP configuration
       ansible.builtin.set_fact:
         device_ntp: "{{ ntp_global | combine ( group_ntp_global | default({})) }}"
   
@@ -134,4 +134,25 @@
       - never
       - l3_interfaces
 
+  - name: Configure SNMPv3
+    block:
+    - name: Print out snmp
+      ansible.builtin.debug:
+        msg: "{{ snmp_server }}"
+        verbosity: 2
+
+    - name: Make snmp config changes based on host_vars data
+      cisco.nxos.nxos_snmp_server:
+        config: "{{ snmp_server }}"
+        state: merged
+      register: result
+      #check_mode: true
+
+    - name: Print any snmp configuration changes
+      ansible.builtin.debug:
+        msg: "{{ result.commands }}"
+    # end of l3_interfaces block tasks
+    tags:
+      - never
+      - snmp
 ...

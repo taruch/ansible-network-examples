@@ -31,3 +31,51 @@ group_ntp_global:
     - server: 132.163.97.2
       #time-b-wwv.nist.gov
       vrf: default
+
+group_snmp_server:
+  users:
+    auth:
+    -   authentication:
+            algorithm: md5
+            localized_key: true
+            password: '0x328945d53e05e8e7207f8c20b142f0b7'
+            priv:
+                privacy_password: '0x328945d53e05e8e7207f8c20b142f0b7'
+        group: network-admin
+        user: admin
+    -   authentication:
+            algorithm: md5
+            localized_key: true
+            password: '0x55dcefbb680d444698aa41baace12552'
+            priv:
+                privacy_password: '0x55dcefbb680d444698aa41baace12552'
+        group: network-operator
+        user: ansible
+    -   authentication:
+            algorithm: md5
+            localized_key: true
+            password: '0x55b3c64a53fb95518e75358ee75e82e9'
+            priv:
+                privacy_password: '0x55b3c64a53fb95518e75358ee75e82e9'
+        group: network-operator
+        user: cisco
+    -   authentication:
+            algorithm: md5
+            localized_key: true
+            password: '0x5ceb414591539ee35159fca86fdfa101'
+            priv:
+                privacy_password: '0x5ceb414591539ee35159fca86fdfa101'
+        group: network-admin
+        user: lab
+    hosts:
+    - host: 192.0.2.1
+      traps: True
+      version: '1'
+      community: public
+    - host: 192.0.2.1
+      source_interface: Ethernet1/1
+    - host: 192.0.3.2
+      informs: True
+      version: '3'
+      auth: NMS
+

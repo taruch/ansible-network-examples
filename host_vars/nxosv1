@@ -220,14 +220,6 @@ snmp_server:
         -   authentication:
                 algorithm: md5
                 localized_key: true
-                password: '0x55dcefbb680d444698aa41baace12552'
-                priv:
-                    privacy_password: '0x55dcefbb680d444698aa41baace12552'
-            group: network-operator
-            user: ansible
-        -   authentication:
-                algorithm: md5
-                localized_key: true
                 password: '0x55b3c64a53fb95518e75358ee75e82e9'
                 priv:
                     privacy_password: '0x55b3c64a53fb95518e75358ee75e82e9'
@@ -241,6 +233,7 @@ snmp_server:
                     privacy_password: '0x5ceb414591539ee35159fca86fdfa101'
             group: network-admin
             user: lab
+
 static_routes:
 -   address_families:
     -   afi: ipv4
