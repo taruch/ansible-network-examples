@@ -1,0 +1,71 @@
+---
+- name: Configure GRE Tunnels
+  hosts: all
+  gather_facts: no
+
+  vars:
+    cisco-rtr-1_public_ip: "18.189.209.195"
+    #cisco-rtr-1_public_ip: "{{ hostvars['cisco-rtr-1']['ansible_host'] }}"
+    cisco-rtr-2_public_ip: "3.137.129.183"
+    #cisco-rtr-2_public_ip: "{{ hostvars['cisco-rtr-2']['ansible_host'] }}"
+    cisco-rtr-3_public_ip: "3.142.154.41"
+    #cisco-rtr-3_public_ip: "{{ hostvars['cisco-rtr-3']['ansible_host'] }}"
+    cisco-rtr-4_public_ip: "18.189.98.51"
+    #cisco-rtr-4_public_ip: "{{ hostvars['cisco-rtr-4']['ansible_host'] }}"
+
+  tasks:
+
+
+  - name: create tunnel interface R1 to R2
+    ios_config:
+      lines:
+       - 'ip address 10.0.0.1 255.255.255.30'
+       - 'tunnel source GigabitEthernet1'
+       - 'tunnel destination {{ cisco-rtr-2_public_ip }}'
+      parents: interface Tunnel 0
+    when: '"cisco-rtr-1" in inventory_hostname'
+
+  - name: create tunnel interface R1 to R2
+    ios_config:
+      lines:
+       - 'ip address 10.0.0.2 255.255.255.0'
+       - 'tunnel source GigabitEthernet1'
+       - 'tunnel destination {{ cisco-rtr-1_public_ip }}'
+      parents: interface Tunnel 0
+    when: '"cisco-rtr-2" in inventory_hostname'
+
+  - name: create tunnel interface R2 to R3
+    ios_config:
+      lines:
+       - 'ip address 10.0.0.5 255.255.255.0'
+       - 'tunnel source GigabitEthernet1'
+       - 'tunnel destination {{ cisco-rtr-3_public_ip }}'
+      parents: interface Tunnel 1
+    when: '"cisco-rtr-2" in inventory_hostname'
+
+  - name: create tunnel interface R2 to R3
+    ios_config:
+      lines:
+       - 'ip address 10.0.0.6 255.255.255.0'
+       - 'tunnel source GigabitEthernet1'
+       - 'tunnel destination {{ cisco-rtr-2_public_ip }}'
+      parents: interface Tunnel 1
+    when: '"cisco-rtr-3" in inventory_hostname'
+
+  - name: create tunnel interface R3 to R4
+    ios_config:
+      lines:
+       - 'ip address 10.0.0.7 255.255.255.0'
+       - 'tunnel source GigabitEthernet1'
+       - 'tunnel destination {{ cisco-rtr-4_public_ip }}'
+      parents: interface Tunnel 0
+    when: '"cisco-rtr-3" in inventory_hostname'
+
+  - name: create tunnel interface R2 to R3
+    ios_config:
+      lines:
+       - 'ip address 10.0.0.8 255.255.255.0'
+       - 'tunnel source GigabitEthernet1'
+       - 'tunnel destination {{ cisco-rtr-3_public_ip }}'
+      parents: interface Tunnel 0
+    when: '"cisco-rtr-4" in inventory_hostname'
