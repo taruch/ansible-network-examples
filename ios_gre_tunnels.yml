@@ -55,7 +55,7 @@
   - name: create tunnel interface R3 to R4
     ios_config:
       lines:
-       - 'ip address 10.0.0.7 255.255.255.252'
+       - 'ip address 10.0.0.9 255.255.255.252'
        - 'tunnel source GigabitEthernet1'
        - 'tunnel destination {{ cisco_rtr_4_public_ip }}'
       parents: interface Tunnel 0
@@ -64,7 +64,7 @@
   - name: create tunnel interface R2 to R3
     ios_config:
       lines:
-       - 'ip address 10.0.0.8 255.255.255.252'
+       - 'ip address 10.0.0.10 255.255.255.252'
        - 'tunnel source GigabitEthernet1'
        - 'tunnel destination {{ cisco_rtr_3_public_ip }}'
       parents: interface Tunnel 0
