@@ -38,14 +38,14 @@
       #gather_subset:
         #- '!min'
         #- all
-    register: ansible_network_resources
+    #register: ansible_network_resources
 
   - name: Print out
     ansible.builtin.debug:
       var: ansible_network_resources
 
-  - name: Store VLAN facts to host_vars
-    ansible.builtin.copy:
-      content: "{{ ansible_network_resources | to_nice_yaml }}"
-      dest: "./host_vars/{{ inventory_hostname }}"
-    delegate_to: localhost 
+#  - name: Store VLAN facts to host_vars
+#    ansible.builtin.copy:
+#      content: "{{ ansible_network_resources | to_nice_yaml }}"
+#      dest: "./host_vars/{{ inventory_hostname }}"
+#    delegate_to: localhost 

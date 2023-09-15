@@ -4,10 +4,6 @@
   gather_facts: no
 
   tasks:
-    - name: print thing
-      ansible.builtin.debug:
-        msg: beginning
-
     - name: get facts
       cisco.nxos.nxos_facts:
         gather_subset:
