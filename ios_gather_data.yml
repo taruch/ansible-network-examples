@@ -1,6 +1,6 @@
 ---
 - name: Gather configuration information from NXOS devices
-  hosts: nxosv2
+  hosts: cisco_routers
   gather_facts: no
 
   tasks:
