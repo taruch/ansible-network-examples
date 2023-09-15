@@ -8,8 +8,6 @@
     cisco.ios.ios_config:
       backup: true
 
-‘bgp_global’, ‘l3_interfaces’, ‘lag_interfaces’, ‘ntp_global’, ‘acls’, ‘hostname’, ‘interfaces’, ‘lldp_interfaces’, ‘logging_global’, ‘ospf_interfaces’, ‘ospfv2’, ‘prefix_lists’, ‘static_routes’, ‘acl_interfaces’, ‘all’, ‘bgp_address_family’, ‘l2_interfaces’, ‘lacp’, ‘lacp_interfaces’, ‘lldp_global’, ‘ospfv3’, ‘snmp_server’, ‘vlans’, ‘service’
-
   - name: Gather network information as structured data
     cisco.ios.ios_facts:
       gather_network_resources:
