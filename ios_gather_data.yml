@@ -33,14 +33,10 @@
         - 'prefix_lists'
         - 'static_routes'
         - 'acl_interfaces'
-      #gather_subset:
-        #- '!min'
-        #- all
-    #register: ansible_network_resources
 
   - name: Print out
     ansible.builtin.debug:
-      var: ansible_network_resources
+      msg: "{{ ansible_network_resources | to_nice_yaml }}"
 
 #  - name: Store VLAN facts to host_vars
 #    ansible.builtin.copy:
