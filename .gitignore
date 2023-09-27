@@ -1,3 +1,5 @@
 *.log
 *artifact*.json
 *.swp
+backup
+collections/ansible_collections
