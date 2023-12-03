@@ -26,12 +26,16 @@
       gather_subset:
         - '!min'
         - '!all'
+    tags:
+      - always
 
   - name: Print out
     ansible.builtin.debug:
       msg: "{{ ansible_network_resources }}"
       #var: ansible_facts.ansible_network_resources
       verbosity: 2
+    tags:
+      - always
 
   - name: GitOps functions
     block:
@@ -46,41 +50,34 @@
         var: repository
         verbosity: 2
  
-    - name: Create a config_backups directory if it does not exist
-      ansible.builtin.file:
-        path: "{{ repository['path'] }}/config_backups"
-        state: directory
-        mode: '0755'
-      when: ansible_facts.net_config is defined
+    # - name: Create a config_backups directory if it does not exist
+    #   ansible.builtin.file:
+    #     path: "{{ repository['path'] }}/config_backups"
+    #     state: directory
+    #     mode: '0755'
+    #   when: ansible_facts.net_config is defined
  
-    - name: Add to the repository
-      ansible.builtin.copy:
-        content: "{{ ansible_facts.net_config }}"
-        dest: "{{ repository['path'] }}/config_backups/{{ inventory_hostname }}"
-      when: ansible_facts.net_config is defined
-      register: result
+    # - name: Add to the repository
+    #   ansible.builtin.copy:
+    #     content: "{{ ansible_facts.net_config }}"
+    #     dest: "{{ repository['path'] }}/config_backups/{{ inventory_hostname }}"
+    #   when: ansible_facts.net_config is defined
+    #   register: result
 
     - name: Create a host_vars directory if it does not exist
       ansible.builtin.file:
-        path: "{{ repository['path'] }}/host_vars"
+        path: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}"
         state: directory
         mode: '0755'
-      when: '"routing" in ansible_net_gather_subset'
+      when: ansible_network_resources is defined
  
     - name: Add global facts to the repository
       ansible.builtin.lineinfile:
-        line: "{{ ansible_facts | to_nice_yaml }}"
-        path: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}"
+        line: "{{ ansible_network_resources.l2_interfaces | to_nice_yaml }}"
+        path: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}/l2_interfaces.yml"
         create: yes
-      when: '"routing" in ansible_net_gather_subset'
+      when: ansible_network_resources.l2_interfaces is defined
       register: result
- 
-    - name: Add security rules to the host_vars repository
-      ansible.builtin.lineinfile:
-        line: "{{ registered_sec_rules | to_nice_yaml }}"
-        path: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}"
-        create: yes
-      when: registered_sec_rules is defined
  
     - name: Set date_time variable
       ansible.builtin.set_fact:
@@ -111,5 +108,7 @@
   - name: Ensure config did not change
     ansible.builtin.assert: 
       that: not result.changed
+    tags:
+      - always
 
 

@@ -2,4 +2,5 @@
 *artifact*.json
 *.swp
 backup
+tokens
 collections/ansible_collections
