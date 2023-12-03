@@ -50,20 +50,6 @@
         var: repository
         verbosity: 2
  
-    # - name: Create a config_backups directory if it does not exist
-    #   ansible.builtin.file:
-    #     path: "{{ repository['path'] }}/config_backups"
-    #     state: directory
-    #     mode: '0755'
-    #   when: ansible_facts.net_config is defined
- 
-    # - name: Add to the repository
-    #   ansible.builtin.copy:
-    #     content: "{{ ansible_facts.net_config }}"
-    #     dest: "{{ repository['path'] }}/config_backups/{{ inventory_hostname }}"
-    #   when: ansible_facts.net_config is defined
-    #   register: result
-
     - name: Create a host_vars directory if it does not exist
       ansible.builtin.file:
         path: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}"
@@ -93,22 +79,8 @@
           name: "Todd Ruch"
           email: truch@redhat.com
       when: result.changed
+
     ### End of GitOps Block
     tags:
       - gitops
       - never
-
-#  - name: Store VLAN facts to host_vars
-#    delegate_to: laptop
-#    ansible.builtin.copy:
-#      content: "{{ ansible_network_resources | to_nice_yaml }}"
-#      dest: "/home/admin/{{ inventory_hostname }}"
-#    register: result
-
-  - name: Ensure config did not change
-    ansible.builtin.assert: 
-      that: not result.changed
-    tags:
-      - always
-
-
