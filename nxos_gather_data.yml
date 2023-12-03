@@ -52,17 +52,17 @@
  
     - name: Create a host_vars directory if it does not exist
       ansible.builtin.file:
-        path: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}"
+        path: "{{ repository['path'] }}/host_vars"
         state: directory
         mode: '0755'
       when: ansible_network_resources is defined
  
-    - name: Add global facts to the repository
+    - name: Add network facts to the repository
       ansible.builtin.lineinfile:
-        line: "{{ ansible_network_resources.l2_interfaces | to_nice_yaml }}"
-        path: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}/l2_interfaces.yml"
+        line: "{{ ansible_network_resources | to_nice_yaml }}"
+        path: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}.yml"
         create: yes
-      when: ansible_network_resources.l2_interfaces is defined
+      when: ansible_network_resources is defined
       register: result
  
     - name: Set date_time variable
