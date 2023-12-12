@@ -79,7 +79,7 @@
           name: "Todd Ruch"
           email: truch@redhat.com
       when: result.changed
-
+    delegate_to: localhost
     ### End of GitOps Block
     tags:
       - gitops
