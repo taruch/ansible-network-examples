@@ -43,6 +43,7 @@
       ansible.scm.git_retrieve:
         origin:
           url: "{{ git_url }}"
+          #token: "{{ github_token }}"
       register: repository
  
     - name: Debug repository data
@@ -77,7 +78,7 @@
         user:
           name: "Todd Ruch"
           email: truch@redhat.com
-        token: "{{ github_token }}"
+        #token: "{{ github_token }}"
       when: result.changed
     delegate_to: localhost
     ### End of GitOps Block
