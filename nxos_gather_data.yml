@@ -58,10 +58,9 @@
       when: ansible_network_resources is defined
  
     - name: Add network facts to the repository
-      ansible.builtin.lineinfile:
-        line: "{{ ansible_network_resources | to_nice_yaml }}"
-        path: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}.yml"
-        create: yes
+      ansible.builtin.copy:
+        content: "{{ ansible_network_resources | to_nice_yaml }}"
+        dest: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}.yml"
       when: ansible_network_resources is defined
       register: result
  
@@ -78,6 +77,7 @@
         user:
           name: "Todd Ruch"
           email: truch@redhat.com
+        token: "{{ github_token }}"
       when: result.changed
     delegate_to: localhost
     ### End of GitOps Block
