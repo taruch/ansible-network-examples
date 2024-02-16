@@ -8,26 +8,27 @@
     cert_file: ./rtr2.p12
     ca_file: ./cacert.cer
     trustpoint: test3
-    cacert: "-----BEGIN CERTIFICATE-----MIIDfTCCAmWgAwIBAgIQes7tJu7l8IRGgomMEurtqzANBgkqhkiG9w0BAQsFADBR      MRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxFzAVBgoJkiaJk/IsZAEZFgdhbnNpYmxlMR8wHQYDVQQDExZhbnNpYmxlLVdJTkFEU0VSVkVSLUNBMB4XDTI0MDIxMjE4NDEwMVoXDTI5MDIxMjE4NTEwMVowUTEVMBMGCgmSJomT8ixkARkWBWxvY2FsMRcwFQYKCZImiZPyLGQBGRYHYW5zaWJsZTEfMB0GA1UEAxMWYW5zaWJsZS1XSU5BRFNFUlZFUi1DQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALAf1PnaAURqq50i6+NflhpXvPL//2wPG8rj8wiFXQOBZ5sBlXNXalNMG8XrgFO2EnTkO2oHhNibebm6U4909O8kMuGJV5lh2Jb4zvtGPRL4R5CFYfqRKpWHinde3JlocX0SapPh6YWPsf5zIXZL9e4G/yH7kX+qfJAenH7xzyKJwb9Niz8TeioUJeTkTGNUZZxnNwGpqqUOUE3DfoXPOGqR2vttSjuotsnGQS18YApa509MEtwfYpOVGCT/A8qmz7msKxDWqjZB8zuApEcKNCCpK5AEs86Eh7jctAN19nt7cfpSIpiZYI1GqkhPdm0WQbBqz9znGoF1pJAbWswXIsUCAwEAAaNRME8wCwYDVR0PBAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFDgegrwzpRB+cZbz4NRy8M/5m4qRMBAGCSsGAQQBgjcVAQQDAgEAMA0GCSqGSIb3DQEBCwUAA4IBAQCu2ynvgsMEdgsrw+71GIgfgImr5sRqwB5PUs3TnCEV2L44U/dqJyUphP4TNqoHpXNEM0IvvafdsgawvmDQxdVwfxwPOO5qH4TP1pwBfeaRpygpGjaxsloJn4otgbkzA3wreYFkUJ2WFU1VCcpldvNVApXjIedc5Hbb9IU4Q8AER8Ggz8AGqb892aUXDkZKjpcwtJgvV14VoUPTN2O5xqn0fQ2CUJB+iSL6DmUE63gvGLf1NxQwQASzBHBKaxNnktP3v/J6yV7IKejDaEQSdkC14TA9Em/RgU6yQ6rEHfnSwTYDbzZDQrU/FjzM9SkZRnrIfmOe58sRbNH03hUX3sk0-----END CERTIFICATE-----\n"
 
 
   tasks:
-#    - name: Backup Config
-#      tags:
-#        - always
-#      cisco.ios.ios_config:
-#        backup: true
-#
-#    - name: Configure hostname and domain name
-#      tags:
-#        - always
-#      cisco.ios.ios_system:
-#        hostname: "{{ inventory_hostname }}"
-#        domain_name: "{{ domain_name }}"
-#        name_servers:
-#          - 8.8.8.8
-#        domain_search:
-#          - "{{ domain_name }}"
+    - name: Backup Config
+      tags:
+        - backup
+        - never
+      cisco.ios.ios_config:
+        backup: true
+
+    - name: Configure hostname and domain name
+      tags:
+        - hostinfo
+        - never
+      cisco.ios.ios_system:
+        hostname: "{{ inventory_hostname }}"
+        domain_name: "{{ domain_name }}"
+        name_servers:
+          - 8.8.8.8
+        domain_search:
+          - "{{ domain_name }}"
 
     - name: Configure NTP
       tags:
@@ -82,8 +83,8 @@
       - name: Delete the Trustpoint
         ansible.netcommon.cli_command:
           command: {{ item }}
-        prompt: "Are you sure you want to do this? [yes/no]:"
-        answer: "y"
+        prompt: 'Are you sure you want to do this? [yes/no]:'
+        answer: 'y'
         loop:
           - conf t
           - no crypto pki trustpoint {{ trustpoint }}
@@ -130,7 +131,7 @@
           ansible.builtin.debug:
             var: csr_output
 
-    - name: Add the CA Cert to trustpoint
+    - name: Add the CA Cert to Trustpoint
       tags:
         - ca_cert_trustpoint
         - never
