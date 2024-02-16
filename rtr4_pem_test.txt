@@ -308,3 +308,21 @@ CA Certificate
   Associated Trustpoints: SLA-TrustPoint Trustpool 
   Storage: nvram:CiscoLicensi#1CA.cer
 
+
+rtr4(config)#do sho crypto pki trustpoint pem_test status
+Trustpoint pem_test:
+  Issuing CA certificate configured:
+    Subject Name:
+     cn=ansible-WINADSERVER-CA,dc=ansible,dc=local
+    Fingerprint MD5: 399C6E36 47047B5C D3FD2746 3F35B242 
+    Fingerprint SHA1: B68F6BE8 29B903E2 8FCFE31A E98B2979 D1B0DC90 
+  Router General Purpose certificate configured:
+    Subject Name:
+     cn=rtr4.ansible.local,ou=NAPS,o=Red Hat,l=Pasadena,st=MD,c=US,hostname=rtr4.ansible.local
+    Fingerprint MD5: 696567DB 6C5B0B80 29052458 6F907097 
+    Fingerprint SHA1: F5D9B4C5 C182879E 8E362B07 22EF2B5A 1B0205C2 
+  State:
+    Keys generated ............. Yes (General Purpose, non-exportable)
+    Issuing CA authenticated ....... Yes
+    Certificate request(s) ..... Yes
+
