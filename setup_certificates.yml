@@ -74,15 +74,13 @@
           ansible.builtin.debug:
             msg: "{{ my4096rsakey.stdout_lines }}"
             verbosity: 2
-
-    - name: Delete Trustpoint on Switch
+ 
+    - name: Delete the Trustpoint on Switch
       tags:
-        - trustpoint_delete
-        - never
-      
-      - name: Delete the Trustpoint
-        ansible.netcommon.cli_command:
-          command: {{ item }}
+      - trustpoint_delete
+      - never
+      ansible.netcommon.cli_command:
+        command: "{{ item }}"
         prompt: 'Are you sure you want to do this? [yes/no]:'
         answer: 'y'
         loop:
@@ -138,7 +136,7 @@
       block:
         - name: Set cacert variable
           ansible.builtin.set_fact:
-            cacert: "{{ (lookup('file', 'cacert.cer') | split('\n')) | list + ['quit'] }}"
+            cacert: "{{ (lookup('file', './certificates/cacert.cer') | split('\n')) | list + ['quit'] }}"
 
         - name: debug
           ansible.builtin.debug:
@@ -148,6 +146,7 @@
           ansible.netcommon.cli_command:
             command: "{{ item }}"
             #check_all: true
+            #sendonly: true
             prompt:
               - 'End with a blank line or the word "quit" on a line by itself'
               - 'Do you accept this certificate? [yes/no]:'
