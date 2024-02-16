@@ -1,0 +1,310 @@
+https://www.cisco.com/c/en/us/support/docs/security-vpn/public-key-infrastructure-pki/220422-configure-ca-signed-certificates-with-io.html
+
+IOS XE PKI Configuration
+At a high level an administrator must perform the following actions when working with IOS XE PKI certificates:
+
+Create a key for use with a feature or service (crypto key generate)
+Configure a trustpoint with various parameters and link the key. (crypto pki trustpoint)
+Generate a certificate signing request (CSR) (crypto pki enroll)
+Provide the CSR to a CA for signing (not covered in this document)
+Authenticate the Root and/or intermediate CA certificates (crypto pki authenticate)
+Import the device certificates (crypto pki import)
+Optional: Authenticate peer CA certificates (crypto pki authenticate)
+These steps are detailed in the upcoming sections grouped by the commands required for the given action.
+
+
+
+
+
+rtr4#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+rtr4(config)# no crypto pki trustpoint thetp
+% Removing an enrolled trustpoint will destroy all certificates
+ received from the related Certificate Authority.
+
+Are you sure you want to do this? [yes/no]: yes
+% Be sure to ask the CA administrator to revoke your certificates.
+
+rtr4(config)#crypto pki trustpoint pem_test
+rtr4(ca-trustpoint)# ! This will enable you to enroll using certificates on the terminal
+rtr4(ca-trustpoint)# enrollment terminal pem
+rtr4(ca-trustpoint)# subject-name C=US,ST=MD,L=Pasadena,O=Red Hat,OU=NAPS, CN=rtr4.ansible.local
+rtr4(ca-trustpoint)# subject-alt-name rtr4.ansible.local
+rtr4(ca-trustpoint)# serial-number none
+rtr4(ca-trustpoint)# ip-address none
+rtr4(ca-trustpoint)# revocation-check none
+rtr4(ca-trustpoint)# rsakeypair my-4096rsa-key
+rtr4(ca-trustpoint)#exit
+rtr4(config)#crypto pki enroll pem_test
+% Start certificate enrollment .. 
+
+% The subject name in the certificate will include: C=US,ST=MD,L=Pasadena,O=Red Hat,OU=NAPS, CN=rtr4.ansible.local
+% The subject name in the certificate will include: rtr4.ansible.local
+Display Certificate Request to terminal? [yes/no]: !
+% Please answer 'yes' or 'no'.
+Display Certificate Request to terminal? [yes/no]: yes
+Certificate Request follows:
+
+-----BEGIN CERTIFICATE REQUEST-----
+MIIE9TCCAt0CAQAwgY4xGzAZBgNVBAMTEnJ0cjQuYW5zaWJsZS5sb2NhbDENMAsG
+A1UECxMETkFQUzEQMA4GA1UEChMHUmVkIEhhdDERMA8GA1UEBxMIUGFzYWRlbmEx
+CzAJBgNVBAgTAk1EMQswCQYDVQQGEwJVUzEhMB8GCSqGSIb3DQEJAhYScnRyNC5h
+bnNpYmxlLmxvY2FsMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAje9M
+Z1fHqoMRJ0QH24cB8ygt/4Had1jZ0f2nYkDstiFpH1v6X1R1b7Sn6wJ9bAJC7LnA
+UMiY2x5y0WxJ9qT2Fxcv1OaesdRIOuF9e/qHpTR+/ShoBri58kR1bt26rjN7kSHa
+gl4ZU9eJnrO/A/SwPoNYo33fshD2+WPcSxc6y+hm06I4moYPD7cZFFeF15ct5kfh
+p2jl+9MjXf3Uahl1IMxflkjIqHCl1UmW08EF1S1bV3Ga3CFV71CpF5W8REI2iZhf
+IT10CqRVWkL3ZUz94QBqDegRlCb+xeMdmJSupSRcqT0b8HheC9hMXWjWTs/to4g0
+oDE57fMmX5GYKTnAf5mC3H5gTZlAo6iTNLInotDLqG5gGWCN5WKFNL6Ls5bSMo5t
+JLKDlzsf76Y63TUu6NInShUv2FY8sWP515bvJ0K3ZeFHIdcAvBf4sEucqb9XjqYK
+LssRGPrPIRgG1i9+/6buq7pVZFYOZsex73nU2scTxnEmtuFrkpkJ3DNV3HdYxCLO
+T+AaoHjiKOtnDQW4B/A5NTL1ikaHjQnjaLOyK4/rT9Ow3xUoXozB2sFcsxU4Y178
+40RpYMpJ3tdUeTkhtjJ/cVLX7WI3YmibvGJ7UYgrbNE0gftQXj1Eu6X0Hb9X4abS
+3/utQX4ZgLpHeGivrhz+1txu6a2r05X5gsDZ1ykCAwEAAaAhMB8GCSqGSIb3DQEJ
+DjESMBAwDgYDVR0PAQH/BAQDAgWgMA0GCSqGSIb3DQEBBQUAA4ICAQA9Aj6WN3B5
+ejug+uitflLM5qN4hgbkCrJMclja3qsVum4V8GEc5LZINk6viTGXkeBvP9u0+7uF
+6tCmxOsukvx/8xwNmCzrS01BOZKsFu2QlQ7qzj5QRLCY1wi0WXrL+GMlgQnOH534
+xGXWDtTT1WenAzEQURxHS2LtlHJZqZbUI7Kox/qRt1RUpqy+U5jCxsg0kp+utuSu
+A4ZCG2E/I1vkxTr1CfbiG1LjHy+wqOn2/1aP5nl0NLOd+17/qWZ+jX/nmGKzPa0z
+TvQMfeIvOar8Ap9W8y2pY1iP9WEj/e6zGJheLn5HloJIPi299BVDcsToAkqC3M4n
+pH6qMkMOHrof+DD3yL6VB5MIvGeECQbeOYcnDl3wLGJbLm91sluYl8h6ivkNyi1T
+91PiuJH6L4F6J3fKVYx5SinAEISA29bl25teU1JJynLLB/Lr75mxYQhucq723sKR
+7YZObRDUSkn8h2RDBA85eWcQwGLAeaa1Gp3F7/aHSP7jgrKih3Y/Yloka3B5DCia
+NTx2riKuBSF43dgWU0vigthTfO1Y169G9IcvLMUz/m1JrS6+ypmc4q9YhhUOOa3S
+G0B0yQNqtS2LlKN6dTOnHMTdJAZTRoBLVNUvl1hnD+Oy56c8KpAp8QyBraQLGQ6K
+NVa+dOigCPtmHn0EqIBkDODkaK4wUfBq2A==
+-----END CERTIFICATE REQUEST-----
+
+---End - This line not part of the certificate request---
+
+Redisplay enrollment request? [yes/no]: no
+
+rtr4(config)#crypto pki authenticate pem_test    
+
+Enter the base 64 encoded CA certificate.
+End with a blank line or the word "quit" on a line by itself
+
+-----BEGIN CERTIFICATE-----
+MIIDfTCCAmWgAwIBAgIQes7tJu7l8IRGgomMEurtqzANBgkqhkiG9w0BAQsFADBR
+MRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxFzAVBgoJkiaJk/IsZAEZFgdhbnNpYmxl
+MR8wHQYDVQQDExZhbnNpYmxlLVdJTkFEU0VSVkVSLUNBMB4XDTI0MDIxMjE4NDEw
+MVoXDTI5MDIxMjE4NTEwMVowUTEVMBMGCgmSJomT8ixkARkWBWxvY2FsMRcwFQYK
+CZImiZPyLGQBGRYHYW5zaWJsZTEfMB0GA1UEAxMWYW5zaWJsZS1XSU5BRFNFUlZF
+Ui1DQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALAf1PnaAURqq50i
+6+NflhpXvPL//2wPG8rj8wiFXQOBZ5sBlXNXalNMG8XrgFO2EnTkO2oHhNibebm6
+U4909O8kMuGJV5lh2Jb4zvtGPRL4R5CFYfqRKpWHinde3JlocX0SapPh6YWPsf5z
+IXZL9e4G/yH7kX+qfJAenH7xzyKJwb9Niz8TeioUJeTkTGNUZZxnNwGpqqUOUE3D
+foXPOGqR2vttSjuotsnGQS18YApa509MEtwfYpOVGCT/A8qmz7msKxDWqjZB8zuA
+pEcKNCCpK5AEs86Eh7jctAN19nt7cfpSIpiZYI1GqkhPdm0WQbBqz9znGoF1pJAb
+WswXIsUCAwEAAaNRME8wCwYDVR0PBAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wHQYD
+VR0OBBYEFDgegrwzpRB+cZbz4NRy8M/5m4qRMBAGCSsGAQQBgjcVAQQDAgEAMA0G
+CSqGSIb3DQEBCwUAA4IBAQCu2ynvgsMEdgsrw+71GIgfgImr5sRqwB5PUs3TnCEV
+2L44U/dqJyUphP4TNqoHpXNEM0IvvafdsgawvmDQxdVwfxwPOO5qH4TP1pwBfeaR
+pygpGjaxsloJn4otgbkzA3wreYFkUJ2WFU1VCcpldvNVApXjIedc5Hbb9IU4Q8AE
+R8Ggz8AGqb892aUXDkZKjpcwtJgvV14VoUPTN2O5xqn0fQ2CUJB+iSL6DmUE63gv
+GLf1NxQwQASzBHBKaxNnktP3v/J6yV7IKejDaEQSdkC14TA9Em/RgU6yQ6rEHfnS
+wTYDbzZDQrU/FjzM9SkZRnrIfmOe58sRbNH03hUX3sk0
+-----END CERTIFICATE-----
+
+Certificate has the following attributes:
+       Fingerprint MD5: 399C6E36 47047B5C D3FD2746 3F35B242 
+      Fingerprint SHA1: B68F6BE8 29B903E2 8FCFE31A E98B2979 D1B0DC90 
+
+% Do you accept this certificate? [yes/no]: yes
+Trustpoint CA certificate accepted.
+% Certificate successfully imported
+
+rtr4(config)#crypto pki import pem_test certificate
+
+Enter the base 64 encoded certificate.
+End with a blank line or the word "quit" on a line by itself
+
+-----BEGIN CERTIFICATE-----
+MIIFrDCCBJSgAwIBAgITTwAAAA80VKFBa5nOTwAAAAAADzANBgkqhkiG9w0BAQsF
+ADBRMRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxFzAVBgoJkiaJk/IsZAEZFgdhbnNp
+YmxlMR8wHQYDVQQDExZhbnNpYmxlLVdJTkFEU0VSVkVSLUNBMB4XDTI0MDIxNjE3
+NTI1M1oXDTI1MDIxNjE4MDI1M1owgY4xITAfBgkqhkiG9w0BCQITEnJ0cjQuYW5z
+aWJsZS5sb2NhbDELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAk1EMREwDwYDVQQHEwhQ
+YXNhZGVuYTEQMA4GA1UEChMHUmVkIEhhdDENMAsGA1UECxMETkFQUzEbMBkGA1UE
+AxMScnRyNC5hbnNpYmxlLmxvY2FsMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIIC
+CgKCAgEAje9MZ1fHqoMRJ0QH24cB8ygt/4Had1jZ0f2nYkDstiFpH1v6X1R1b7Sn
+6wJ9bAJC7LnAUMiY2x5y0WxJ9qT2Fxcv1OaesdRIOuF9e/qHpTR+/ShoBri58kR1
+bt26rjN7kSHagl4ZU9eJnrO/A/SwPoNYo33fshD2+WPcSxc6y+hm06I4moYPD7cZ
+FFeF15ct5kfhp2jl+9MjXf3Uahl1IMxflkjIqHCl1UmW08EF1S1bV3Ga3CFV71Cp
+F5W8REI2iZhfIT10CqRVWkL3ZUz94QBqDegRlCb+xeMdmJSupSRcqT0b8HheC9hM
+XWjWTs/to4g0oDE57fMmX5GYKTnAf5mC3H5gTZlAo6iTNLInotDLqG5gGWCN5WKF
+NL6Ls5bSMo5tJLKDlzsf76Y63TUu6NInShUv2FY8sWP515bvJ0K3ZeFHIdcAvBf4
+sEucqb9XjqYKLssRGPrPIRgG1i9+/6buq7pVZFYOZsex73nU2scTxnEmtuFrkpkJ
+3DNV3HdYxCLOT+AaoHjiKOtnDQW4B/A5NTL1ikaHjQnjaLOyK4/rT9Ow3xUoXozB
+2sFcsxU4Y17840RpYMpJ3tdUeTkhtjJ/cVLX7WI3YmibvGJ7UYgrbNE0gftQXj1E
+u6X0Hb9X4abS3/utQX4ZgLpHeGivrhz+1txu6a2r05X5gsDZ1ykCAwEAAaOCAT0w
+ggE5MA4GA1UdDwEB/wQEAwIFoDAdBgNVHQ4EFgQUcBDHFUD+HTzqD7H/64dUPPa1
+/eYwHwYDVR0jBBgwFoAUOB6CvDOlEH5xlvPg1HLwz/mbipEwWQYDVR0fBFIwUDBO
+oEygSoZIZmlsZTovLy8vd2luYWRzZXJ2ZXIuYW5zaWJsZS5sb2NhbC9DZXJ0RW5y
+b2xsL2Fuc2libGUtV0lOQURTRVJWRVItQ0EuY3JsMH4GCCsGAQUFBwEBBHIwcDBu
+BggrBgEFBQcwAoZiZmlsZTovLy8vd2luYWRzZXJ2ZXIuYW5zaWJsZS5sb2NhbC9D
+ZXJ0RW5yb2xsL3dpbmFkc2VydmVyLmFuc2libGUubG9jYWxfYW5zaWJsZS1XSU5B
+RFNFUlZFUi1DQS5jcnQwDAYDVR0TAQH/BAIwADANBgkqhkiG9w0BAQsFAAOCAQEA
+lzpeBGV60digrCuwr8eSBYyBZFQ8nBkPORm2tnnQSzBwC3qR2TAeBNPVZ8bb5w7T
+s6Fb6mx1GaxnTqDY61PekJQ74mvw4MShBlItMHI/NIpKH+4bpnoXjQPMVfyJlKf4
+4cLq6vqvx0PaGPL5VDlQ5lW0txzMGLB8G1unH8cF+b94yDmJkl4XiMc9gJVigV0T
+6Pt6rsidf3Zoo59W/b8GsIHlBCJZIQE+dShu8vPww4rLIsZdgL3gDAZxIk+EJft7
+GXstBuVIwo1c/ergtLR9O9sB50vosPzkKGvCOFfH+ZqKuv6Yv1lEd8CbZjIgAOj1
+J9r3DNGGUXyVf2jJd9iFzQ==
+-----END CERTIFICATE-----
+
+% Router Certificate successfully imported
+
+rtr4(config)#end
+rtr4#sho crypto pki certificates verbose pem_test
+Certificate
+  Status: Available
+  Version: 3
+  Certificate Serial Number (hex): 4F0000000F3454A1416B99CE4F00000000000F
+  Certificate Usage: General Purpose
+  Issuer: 
+    cn=ansible-WINADSERVER-CA
+    dc=ansible
+    dc=local
+  Subject:
+    Name: rtr4.ansible.local
+    cn=rtr4.ansible.local
+    ou=NAPS
+    o=Red Hat
+    l=Pasadena
+    st=MD
+    c=US
+    hostname=rtr4.ansible.local
+  CRL Distribution Point: 
+    file:////winadserver.ansible.local/CertEnroll/ansible-WINADSERVER-CA.crl
+  Validity Date: 
+    start date: 17:52:53 UTC Feb 16 2024
+    end   date: 18:02:53 UTC Feb 16 2025
+  Subject Key Info:
+    Public Key Algorithm: rsaEncryption
+    RSA Public Key: (4096 bit)
+  Signature Algorithm: SHA256 with RSA Encryption
+  Fingerprint MD5: 696567DB 6C5B0B80 29052458 6F907097 
+  Fingerprint SHA1: F5D9B4C5 C182879E 8E362B07 22EF2B5A 1B0205C2 
+  X509v3 extensions:
+    X509v3 Key Usage: A0000000
+      Digital Signature
+      Key Encipherment
+    X509v3 Subject Key ID: 7010C715 40FE1D3C EA0FB1FF EB87543C F6B5FDE6 
+    X509v3 Basic Constraints:
+        CA: FALSE
+    X509v3 Authority Key ID: 381E82BC 33A5107E 7196F3E0 D472F0CF F99B8A91 
+    Authority Info Access:
+        CA ISSUERS: file:////winadserver.ansible.local/CertEnroll/winadserver.ansible.local_ansible-WINADSERVER-CA.crt
+  Cert install time: 18:08:00 UTC Feb 16 2024 
+  Associated Trustpoints: pem_test 
+  Key Label: my-4096rsa-key
+
+CA Certificate
+  Status: Available
+  Version: 3
+  Certificate Serial Number (hex): 7ACEED26EEE5F0844682898C12EAEDAB
+  Certificate Usage: Signature
+  Issuer: 
+    cn=ansible-WINADSERVER-CA
+    dc=ansible
+    dc=local
+  Subject: 
+    cn=ansible-WINADSERVER-CA
+    dc=ansible
+    dc=local
+  Validity Date: 
+    start date: 18:41:01 UTC Feb 12 2024
+    end   date: 18:51:01 UTC Feb 12 2029
+  Subject Key Info:
+    Public Key Algorithm: rsaEncryption
+    RSA Public Key: (2048 bit)
+  Signature Algorithm: SHA256 with RSA Encryption
+  Fingerprint MD5: 399C6E36 47047B5C D3FD2746 3F35B242 
+  Fingerprint SHA1: B68F6BE8 29B903E2 8FCFE31A E98B2979 D1B0DC90 
+  X509v3 extensions:
+    X509v3 Key Usage: 86000000
+      Digital Signature
+      Key Cert Sign
+      CRL Signature
+    X509v3 Subject Key ID: 381E82BC 33A5107E 7196F3E0 D472F0CF F99B8A91 
+    X509v3 Basic Constraints:
+        CA: TRUE
+    Authority Info Access:
+  Cert install time: 18:07:01 UTC Feb 16 2024 
+  Associated Trustpoints: pem_test 
+
+
+rtr4#show crypto pki certificates
+Certificate
+  Status: Available
+  Certificate Serial Number (hex): 4F0000000F3454A1416B99CE4F00000000000F
+  Certificate Usage: General Purpose
+  Issuer: 
+    cn=ansible-WINADSERVER-CA
+    dc=ansible
+    dc=local
+  Subject:
+    Name: rtr4.ansible.local
+    cn=rtr4.ansible.local
+    ou=NAPS
+    o=Red Hat
+    l=Pasadena
+    st=MD
+    c=US
+    hostname=rtr4.ansible.local
+  CRL Distribution Point: 
+    file:////winadserver.ansible.local/CertEnroll/ansible-WINADSERVER-CA.crl
+  Validity Date: 
+    start date: 17:52:53 UTC Feb 16 2024
+    end   date: 18:02:53 UTC Feb 16 2025
+  Associated Trustpoints: pem_test 
+
+CA Certificate
+  Status: Available
+  Certificate Serial Number (hex): 7ACEED26EEE5F0844682898C12EAEDAB
+  Certificate Usage: Signature
+  Issuer: 
+    cn=ansible-WINADSERVER-CA
+    dc=ansible
+    dc=local
+  Subject: 
+    cn=ansible-WINADSERVER-CA
+    dc=ansible
+    dc=local
+  Validity Date: 
+    start date: 18:41:01 UTC Feb 12 2024
+    end   date: 18:51:01 UTC Feb 12 2029
+  Associated Trustpoints: pem_test 
+
+Router Self-Signed Certificate
+  Status: Available
+  Certificate Serial Number (hex): 01
+  Certificate Usage: General Purpose
+  Issuer: 
+    cn=IOS-Self-Signed-Certificate-2949660887
+  Subject:
+    Name: IOS-Self-Signed-Certificate-2949660887
+    cn=IOS-Self-Signed-Certificate-2949660887
+  Validity Date: 
+    start date: 16:20:56 UTC Feb 14 2024
+    end   date: 16:20:56 UTC Feb 13 2034
+  Associated Trustpoints: TP-self-signed-2949660887 
+  Storage: nvram:IOS-Self-Sig#1.cer
+
+CA Certificate
+  Status: Available
+  Certificate Serial Number (hex): 01
+  Certificate Usage: Signature
+  Issuer: 
+    cn=Cisco Licensing Root CA
+    o=Cisco
+  Subject: 
+    cn=Cisco Licensing Root CA
+    o=Cisco
+  Validity Date: 
+    start date: 19:48:47 UTC May 30 2013
+    end   date: 19:48:47 UTC May 30 2038
+  Associated Trustpoints: SLA-TrustPoint Trustpool 
+  Storage: nvram:CiscoLicensi#1CA.cer
+
