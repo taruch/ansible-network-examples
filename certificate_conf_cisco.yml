@@ -6,7 +6,7 @@
   vars:
     domain_name: ansible.local
     cert_file: ./rtr2.p12
-    ca_file: ./cacert.cer
+    ca_cert: "{{ lookup('file', './certificates/cacert.cer').splitlines() }}"
     trustpoint: test4
 
 
