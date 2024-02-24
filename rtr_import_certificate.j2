@@ -1,0 +1,6 @@
+conf t
+crypto pki import {{ trustpoint }} certificate
+{% for line in host_cert %}
+{{ line }}
+{% endfor %}
+quit
