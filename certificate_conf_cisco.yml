@@ -115,9 +115,9 @@
             prompt:
               - Display Certificate Request to terminal? [yes/no]:
               - Redisplay enrollment request? [yes/no]:
-            answer: 
-              - yes
-              - no
+            answer:
+              - 'yes'
+              - 'no'
           register: csr_output
 
         - name: Debug csr_output
@@ -138,6 +138,9 @@
           ansible.builtin.copy:
             content: "{{ csr }}"
             dest: "/tmp/{{ inventory_hostname }}.csr"
+            owner: student
+            group: student
+            mode: '0644'
           delegate_to: ansible-1
 
 
@@ -187,7 +190,7 @@
             sendonly: true
           loop: "{{ host_cert_var }}"
 
-
+...
 
     # Not working - Add the CA Cert to Trustpoint
 
@@ -210,7 +213,7 @@
         #     prompt:
         #       - "itself"
         #       - "certificate?"
-        #     answer: 
+        #     answer:
         #       - "{{ cacert }}"
         #       - "yes"
         #   loop:
@@ -257,7 +260,7 @@
         # - name: Set the certfile
         #   ansible.builtin.set_fact:
         #     cert: >
-        #       {{ (lookup('file', 'cacert.cer') | b64encode | regex_replace('(.{1,64})', '\1|')).split('|') | list + ['quit']}} 
+        #       {{ (lookup('file', 'cacert.cer') | b64encode | regex_replace('(.{1,64})', '\1|')).split('|') | list + ['quit']}}
 
         # - name: Enroll the Trustpoint
         #   ansible.netcommon.cli_command:
@@ -265,7 +268,7 @@
         #     prompt: End with a blank line or the word \"quit\" on a line by itself
         #     answer: "{{ cacert }}"
         #   register: csr_output
-          
+
         # - name: Import A New CA Certificate Into The TrustPoint
         #   cisco.ios.ios_config:
         #     replace: block
@@ -286,17 +289,10 @@
         #     dest: "flash:/cacert.cer"
         #   vars:
         #     ansible_command_timeout: 600
-        #    # crypto pki import thetrustpoint pem url 
+        #    # crypto pki import thetrustpoint pem url
         # - name: Update the trustpoint
         #   ansible.netcommon.cli_command:
         #     command: "crypto pki authenticate {{ trustpoint }}"
         #     prompt:
         #       - 'End with a blank line or the word "quit" on a line by iteself'
         #     answer: "{{ cacert }}"
-
-
-
-
-
-
-

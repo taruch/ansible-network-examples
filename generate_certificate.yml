@@ -1,0 +1,47 @@
+---
+- name: Generate a client certificate using Demo CA
+  hosts: ansible-1
+  remote_user: pkiguy
+  become: true
+  gather_facts: false
+
+  vars:
+    client: "rtr1"
+    ca_passphrase: "PASSW0RD"
+
+  tasks:
+    # - name: Generate an OpenSSL certificate signed with your own CA certificate
+    #   community.crypto.x509_certificate:
+    #     path: /tmp/{{ client }}.cer
+    #     csr_path: /tmp/{{ client }}.csr
+    #     ownca_path: /opt/CA/crt/ansible_CA.crt
+    #     ownca_privatekey_path: /opt/CA/private/ansible_CA.pem
+    #     provider: ownca
+
+    # - name: Generate an OpenSSL certificate signed with your own CA certificate
+    #   community.crypto.x509_certificate:
+    #     path: /etc/ssl/crt/ansible.com.crt
+    #     csr_path: /etc/ssl/csr/ansible.com.csr
+    #     ownca_path: /etc/ssl/crt/ansible_CA.crt
+    #     ownca_privatekey_path: /etc/ssl/private/ansible_CA.pem
+    #     provider: ownca
+
+    - name: Generate Demo Certificate with OpenSSL from CSR
+      ansible.builtin.expect:
+        command: "openssl ca -config /opt/X509CA/openssl.cfg -in /tmp/{{ client }}.csr -days 1024 -out /tmp/{{ client }}_fulltext.cer"
+        responses:
+          'Enter pass phrase': "{{ ca_passphrase }}"
+          'certificate?': 'y'
+          'commit?': 'y'
+
+    - name: Fix the certificate
+      ansible.builtin.command: "openssl x509 -notext -in /tmp/{{ client }}_fulltext.cer -out /tmp/{{ client }}.cer"
+
+    - name: Fix file permissions
+      ansible.builtin.file:
+        path: /tmp/{{ client }}.cer
+        owner: student
+        group: student
+        mode: '0644'
+
+...
