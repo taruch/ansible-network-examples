@@ -142,6 +142,7 @@
             group: student
             mode: '0644'
           delegate_to: ansible-1
+          become: true
 
 
     - name: Add the CA Cert to the Trustpoint
