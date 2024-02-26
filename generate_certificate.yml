@@ -1,7 +1,6 @@
 ---
 - name: Generate a client certificate using Demo CA
   hosts: ansible-1
-  #remote_user: pkiguy
   become: true
   gather_facts: false
 
