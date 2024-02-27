@@ -108,8 +108,14 @@
         - name: Debug output
           ansible.builtin.debug:
             var: create_trustpoint_output
+            verbosity: 3
 
-        - name: Create the Trustpoint
+    - name: Generate CSR on Switch
+      tags:
+        - csr_create
+        - never
+      block:
+        - name: Generate the CSR
           ansible.netcommon.cli_command:
             command: "crypto pki enroll {{ trustpoint }}"
             prompt:
@@ -123,7 +129,7 @@
         - name: Debug csr_output
           ansible.builtin.debug:
             var: csr_output
-            verbosity: 2
+            verbosity: 3
 
         - name: Debug the Enrolled CSR
           ansible.builtin.set_fact:
@@ -132,7 +138,7 @@
         - name: Debug output
           ansible.builtin.debug:
             var: csr
-            verbosity: 2
+            verbosity: 3
 
         - name: Write CSR to file
           ansible.builtin.copy:
@@ -141,6 +147,7 @@
             owner: student
             group: student
             mode: '0644'
+            backup: true
           delegate_to: ansible-1
           become: true
 
@@ -172,11 +179,6 @@
           register: slurpfile
           delegate_to: ansible-1
 
-        - name: Debug slurped file
-          ansible.builtin.debug:
-            msg: "{{ slurpfile['content'] | b64decode }}"
-            verbosity: 2
-
         - name: Copy the host cert to EE
           ansible.builtin.set_fact:
             host_cert: "{{ (slurpfile['content'] | b64decode).splitlines() }}"
@@ -191,6 +193,46 @@
             sendonly: true
           loop: "{{ host_cert_var }}"
 
+    - name: Add updated host Cert to the Trustpoint
+      tags:
+        - import_updated_host_certificate
+        - never
+      block:
+        - name: Slurp hosts file
+          ansible.builtin.slurp:
+            src: "/tmp/{{ inventory_hostname }}.cer"
+          register: slurpfile
+          delegate_to: ansible-1
+
+        - name: Copy the host cert to EE
+          ansible.builtin.set_fact:
+            host_cert: "{{ (slurpfile['content'] | b64decode).splitlines() }}"
+
+        - name: Create the template variable
+          ansible.builtin.set_fact:
+            host_cert_var: "{{ lookup('ansible.builtin.template', './rtr_import_updated_certificate.j2') | split('\n') }}"
+
+        - name: Import the host Certificate
+          ansible.netcommon.cli_command:
+            command: "{{ item }}"
+            sendonly: true
+          loop: "{{ host_cert_var }}"
+
+
+    - name: Check for Certificate on Host
+      tags:
+        - check_certificate
+        - never
+      block:
+        - name: Gather_facts and debug
+          ansible.netcommon.cli_command:
+            command: sho crypto pki certificates
+          register: certificates
+
+        - name: Example using fail and when together
+          ansible.builtin.fail:
+            msg: The system may not be provisioned with the certificate
+          when: inventory_hostname not in certificates.stdout
 ...
 
     # Not working - Add the CA Cert to Trustpoint
