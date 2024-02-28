@@ -1,6 +1,6 @@
 ---
 - name: Configure Certificate on IOS XE device
-  hosts: rtr1
+  hosts: cisco
   gather_facts: false
 
   vars:
@@ -8,7 +8,7 @@
     cert_file: ./rtr2.p12
     ca_cert: "{{ lookup('file', './certificates/cacert.cer').splitlines() }}"
     trustpoint: test4
-
+    certificate_on_host: false
 
   tasks:
     - name: Backup Config
@@ -151,7 +151,6 @@
           delegate_to: ansible-1
           become: true
 
-
     - name: Add the CA Cert to the Trustpoint
       tags:
         - ca_cert_trustpoint
@@ -166,7 +165,6 @@
             command: "{{ item }}"
             sendonly: true
           loop: "{{ cacert_var }}"
-
 
     - name: Add the host Cert to the Trustpoint
       tags:
@@ -183,6 +181,16 @@
           ansible.builtin.set_fact:
             host_cert: "{{ (slurpfile['content'] | b64decode).splitlines() }}"
 
+        - name: Gather_facts and debug
+          ansible.netcommon.cli_command:
+            command: sho crypto pki certificates
+          register: certificates
+
+        - name: Check for Certificate and Set certificate_on_host
+          ansible.builtin.set_fact:
+            certificate_on_host: true
+          when: inventory_hostname in certificates.stdout
+
         - name: Create the template variable
           ansible.builtin.set_fact:
             host_cert_var: "{{ lookup('ansible.builtin.template', './rtr_import_certificate.j2') | split('\n') }}"
@@ -193,149 +201,18 @@
             sendonly: true
           loop: "{{ host_cert_var }}"
 
-    - name: Add updated host Cert to the Trustpoint
+    - name: Check for Updated Certificate on Host
       tags:
-        - import_updated_host_certificate
+        - check_for_updated_certificate
         - never
       block:
-        - name: Slurp hosts file
-          ansible.builtin.slurp:
-            src: "/tmp/{{ inventory_hostname }}.cer"
-          register: slurpfile
-          delegate_to: ansible-1
-
-        - name: Copy the host cert to EE
-          ansible.builtin.set_fact:
-            host_cert: "{{ (slurpfile['content'] | b64decode).splitlines() }}"
-
-        - name: Create the template variable
-          ansible.builtin.set_fact:
-            host_cert_var: "{{ lookup('ansible.builtin.template', './rtr_import_updated_certificate.j2') | split('\n') }}"
-
-        - name: Import the host Certificate
-          ansible.netcommon.cli_command:
-            command: "{{ item }}"
-            sendonly: true
-          loop: "{{ host_cert_var }}"
-
-
-    - name: Check for Certificate on Host
-      tags:
-        - check_certificate
-        - never
-      block:
-        - name: Gather_facts and debug
+        - name: Get certificates from host
           ansible.netcommon.cli_command:
             command: sho crypto pki certificates
           register: certificates
 
-        - name: Example using fail and when together
+        - name: Fail when hostname not in certificates
           ansible.builtin.fail:
             msg: The system may not be provisioned with the certificate
           when: inventory_hostname not in certificates.stdout
 ...
-
-    # Not working - Add the CA Cert to Trustpoint
-
-        # - name: Set cacert variable
-        #   ansible.builtin.set_fact:
-        #     cacert: "{{ lookup('file', './certificates/cacert.cer') | regex_replace('\n', '\r') }}"
-        #     #cacert: "{{ (lookup('file', './certificates/cacert.cer') | b64encode | regex_replace('(.{1,64})', '\1|')).split('|') | list + ['quit']}}"
-        #     #cacert: "{{ (lookup('file', './certificates/cacert.cer')) }}"
-        #     #cacert: "{{ (lookup('file', './certificates/cacert.cer') | split('\n')) | list + ['quit'] }}"
-
-        # - name: debug
-        #   ansible.builtin.debug:
-        #     var: cacert
-
-        # - name: Update the trustpoint
-        #   ansible.netcommon.cli_command:
-        #     command: "{{ item }}"
-        #     #check_all: true
-        #     #sendonly: true
-        #     prompt:
-        #       - "itself"
-        #       - "certificate?"
-        #     answer:
-        #       - "{{ cacert }}"
-        #       - "yes"
-        #   loop:
-        #     - conf t
-        #     - crypto pki authenticate test4
-        #     #- crypto pki authenticate {{ trustpoint }}"
-
-        # - name: copy file to EE
-        #   copy:
-        #     src: ./cacert.cer
-        #     dest: /tmp/cacert.cer
-        #   #delegate_to: ansible-1
-
-        # - name: Set cacert variable
-        #   ansible.builtin.set_fact:
-        #     cacert: "{{ lookup('file', '/tmp/cacert.cer') | split('\n') }}"
-
-        # - name: Debug cacert variable
-        #   ansible.builtin.debug:
-        #     var: cacert
-
-        # - name: Enroll the Trustpoint
-        #   cisco.ios.ios_config:
-        #     lines: "{{ lookup('file', './rtr2cert_commands.cfg') | regex_replace('\n', '') }}"
-        #   register: csr_output
-
-        # - name: Enroll the Trustpoint
-        #   ansible.netcommon.cli_config:
-        #     config: "{{ lookup('file', './rtr2cert_commands.cfg') }}"
-        #     multiline_delimiter: '\r'
-        #   register: csr_output
-
-        # - name: Enroll the Trustpoint
-        #   ansible.netcommon.cli_config:
-        #     config: "{{ lookup('template', './rtr2cert_config.j2') }}"
-        #   register: csr_output
-
-        # - name: Set the certfile
-        #   ansible.builtin.set_fact:
-        #   set_fact:
-        #     cert: >
-        #       {{ (lookup('file', cert_file) | b64encode | regex_replace('(.{1,510})', '\1|')).split('|') | list }}
-
-        # - name: Set the certfile
-        #   ansible.builtin.set_fact:
-        #     cert: >
-        #       {{ (lookup('file', 'cacert.cer') | b64encode | regex_replace('(.{1,64})', '\1|')).split('|') | list + ['quit']}}
-
-        # - name: Enroll the Trustpoint
-        #   ansible.netcommon.cli_command:
-        #     command: "crypto pki authenticate {{ trustpoint }}"
-        #     prompt: End with a blank line or the word \"quit\" on a line by itself
-        #     answer: "{{ cacert }}"
-        #   register: csr_output
-
-        # - name: Import A New CA Certificate Into The TrustPoint
-        #   cisco.ios.ios_config:
-        #     replace: block
-        #     lines: "{{ cacert | b64encode }}"
-        #     parents: "crypto pki authenticate {{ trustpoint }}"
-
-        # - name: Enroll the Trustpoint
-        #   ansible.netcommon.cli_config:
-        #     config: "{{ item }}"
-        #   loop: "{{ lookup('template', './rtr2cert_config.j2') | split('\n') }}"
-        #   register: csr_output
-
-        # - name: copy file from EE to a network device
-        #   ansible.netcommon.net_put:
-        #     #src: ./cacert.cer
-        #     src: "/tmp/cacert.cer"
-        #     #protocol: sftp
-        #     dest: "flash:/cacert.cer"
-        #   vars:
-        #     ansible_command_timeout: 600
-        #    # crypto pki import thetrustpoint pem url
-        # - name: Update the trustpoint
-        #   ansible.netcommon.cli_command:
-        #     command: "crypto pki authenticate {{ trustpoint }}"
-        #     prompt:
-        #       - 'End with a blank line or the word "quit" on a line by iteself'
-        #     answer: "{{ cacert }}"
