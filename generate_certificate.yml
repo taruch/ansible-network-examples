@@ -5,7 +5,7 @@
   gather_facts: false
 
   vars:
-    client: "rtr1"
+    client: "{{ inventory_hostname }}"
     ca_passphrase: "PASSW0RD"
     days: '10'
 
@@ -30,20 +30,5 @@
         group: student
         mode: '0644'
 
-    # - name: Generate an OpenSSL certificate signed with your own CA certificate
-    #   community.crypto.x509_certificate:
-    #     path: /tmp/{{ client }}.cer
-    #     csr_path: /tmp/{{ client }}.csr
-    #     ownca_path: /opt/CA/crt/ansible_CA.crt
-    #     ownca_privatekey_path: /opt/CA/private/ansible_CA.pem
-    #     provider: ownca
-
-    # - name: Generate an OpenSSL certificate signed with your own CA certificate
-    #   community.crypto.x509_certificate:
-    #     path: /etc/ssl/crt/ansible.com.crt
-    #     csr_path: /etc/ssl/csr/ansible.com.csr
-    #     ownca_path: /etc/ssl/crt/ansible_CA.crt
-    #     ownca_privatekey_path: /etc/ssl/private/ansible_CA.pem
-    #     provider: ownca
 
 ...

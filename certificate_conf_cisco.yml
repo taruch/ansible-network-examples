@@ -1,14 +1,16 @@
 ---
 - name: Configure Certificate on IOS XE device
-  hosts: cisco
+  hosts: rtr1
   gather_facts: false
 
   vars:
     domain_name: ansible.local
     cert_file: ./rtr2.p12
     ca_cert: "{{ lookup('file', './certificates/cacert.cer').splitlines() }}"
-    trustpoint: test4
+    trustpoint: aaptest1
     certificate_on_host: false
+    certificates: []
+    certificates_outofdate: []
 
   tasks:
     - name: Backup Config
@@ -151,6 +153,7 @@
           delegate_to: ansible-1
           become: true
 
+
     - name: Add the CA Cert to the Trustpoint
       tags:
         - ca_cert_trustpoint
@@ -165,6 +168,7 @@
             command: "{{ item }}"
             sendonly: true
           loop: "{{ cacert_var }}"
+
 
     - name: Add the host Cert to the Trustpoint
       tags:
@@ -215,4 +219,47 @@
           ansible.builtin.fail:
             msg: The system may not be provisioned with the certificate
           when: inventory_hostname not in certificates.stdout
+
+    - name: Check Certificate on Host
+      tags:
+        - check_certificate
+        - never
+      block:
+        - name: Get certificates from host
+          ansible.netcommon.cli_command:
+            command: "sho crypto pki certificates {{ trustpoint }}"
+          register: certificates
+
+        - name: Fail when hostname not in certificates
+          ansible.builtin.fail:
+            msg: The system may not be provisioned with a certificate
+          when: inventory_hostname not in certificates.stdout
+
+        - name: Debug Fact
+          ansible.builtin.debug:
+            msg: "{{ certificates }}"
+
+        - name: "Parse CLI Output from show crypto pki certificates"
+          vars:
+            template: "/usr/local/lib/python3.9/site-packages/ntc_templates/templates/cisco_ios_show_crypto_pki_certificates.textfsm"
+          ansible.builtin.set_fact:
+            certs_parsed: "{{ certificates.stdout | parse_cli_textfsm(template) }}"
+
+        - name: Get System Time
+          ansible.builtin.command:
+            cmd: 'date -u +"%H:%M:%S UTC %b %d %Y"'
+          changed_when: false
+          register: current_date
+          delegate_to: ansible-1
+
+
+        - name: Date Another Fact
+          ansible.builtin.set_fact:
+            certificates_outofdate: "true"
+          when:
+            - item.CERTIFICATE_TYPE == "Certificate"
+            - "{{ (((item.END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < 20}}"
+          loop: "{{ certs_parsed }}"
+
+
 ...
