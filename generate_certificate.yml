@@ -5,16 +5,16 @@
   gather_facts: false
 
   vars:
-    client: "{{ inventory_hostname }}"
     ca_passphrase: "PASSW0RD"
-    days: '10'
+    client: "{{ data.client }}"
+    days: '20'
 
   tasks:
     - name: Delete files
       ansible.builtin.file:
         path: "/tmp/{{ client }}.cer"
         state: absent
-
+  
     - name: Generate Demo Certificate with OpenSSL from CSR
       ansible.builtin.expect:
         command: "openssl ca -config /opt/X509CA/openssl.cfg -in /tmp/{{ client }}.csr -days {{ days }} -out /tmp/{{ client }}.cer -notext"
@@ -29,6 +29,5 @@
         owner: student
         group: student
         mode: '0644'
-
 
 ...

@@ -31,32 +31,7 @@
           - 8.8.8.8
         domain_search:
           - "{{ domain_name }}"
-
-    - name: Configure NTP
-      tags:
-        - never
-        - ntp
-      block:
-        - name: Print out ntp configuration
-          ansible.builtin.debug:
-            msg: "{{ ntp_global }}"
-            verbosity: 2
-
-        - name: Combine host and group defined NTP configuration
-          ansible.builtin.set_fact:
-            device_ntp: "{{ ntp_global | combine(group_ntp_global | default({})) }}"
-
-        - name: Update NTP Configuration
-          cisco.ios.ios_ntp_global:
-            config: "{{ device_ntp }}"
-            state: replaced
-          register: result
-
-        - name: Print any NTP configuration changes
-          ansible.builtin.debug:
-            msg: "{{ result.commands }}"
-      # End of NTP block tasks
-
+  
     - name: Configure host key
       tags:
         - key_generation
@@ -153,7 +128,6 @@
           delegate_to: ansible-1
           become: true
 
-
     - name: Add the CA Cert to the Trustpoint
       tags:
         - ca_cert_trustpoint
@@ -205,61 +179,12 @@
             sendonly: true
           loop: "{{ host_cert_var }}"
 
-    - name: Check for Updated Certificate on Host
+    - name: Set Client Name for Follow-on Templates
       tags:
-        - check_for_updated_certificate
-        - never
-      block:
-        - name: Get certificates from host
-          ansible.netcommon.cli_command:
-            command: sho crypto pki certificates
-          register: certificates
-
-        - name: Fail when hostname not in certificates
-          ansible.builtin.fail:
-            msg: The system may not be provisioned with the certificate
-          when: inventory_hostname not in certificates.stdout
-
-    - name: Check Certificate on Host
-      tags:
-        - check_certificate
-        - never
-      block:
-        - name: Get certificates from host
-          ansible.netcommon.cli_command:
-            command: "sho crypto pki certificates {{ trustpoint }}"
-          register: certificates
-
-        - name: Fail when hostname not in certificates
-          ansible.builtin.fail:
-            msg: The system may not be provisioned with a certificate
-          when: inventory_hostname not in certificates.stdout
-
-        - name: Debug Fact
-          ansible.builtin.debug:
-            msg: "{{ certificates }}"
-
-        - name: "Parse CLI Output from show crypto pki certificates"
-          vars:
-            template: "/usr/local/lib/python3.9/site-packages/ntc_templates/templates/cisco_ios_show_crypto_pki_certificates.textfsm"
-          ansible.builtin.set_fact:
-            certs_parsed: "{{ certificates.stdout | parse_cli_textfsm(template) }}"
-
-        - name: Get System Time
-          ansible.builtin.command:
-            cmd: 'date -u +"%H:%M:%S UTC %b %d %Y"'
-          changed_when: false
-          register: current_date
-          delegate_to: ansible-1
-
-
-        - name: Date Another Fact
-          ansible.builtin.set_fact:
-            certificates_outofdate: "true"
-          when:
-            - item.CERTIFICATE_TYPE == "Certificate"
-            - "{{ (((item.END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < 20}}"
-          loop: "{{ certs_parsed }}"
+        - always
+      ansible.builtin.set_stats:
+        data:
+          client: "{{ inventory_hostname }}"
 
 
 ...
