@@ -6,7 +6,7 @@
 
   vars:
     ca_passphrase: "PASSW0RD"
-    client: "{{ data.client }}"
+    client: "{{ data.client | default('rtr1')}}"
     days: '20'
 
   tasks:
