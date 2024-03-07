@@ -11,7 +11,7 @@
   tasks:
     - name: Delete files
       ansible.builtin.file:
-        path: "/tmp/{{ client }}.cer"
+        path: "/tmp/{{ client }}_{{ trustpoint }}.cer"
         state: absent
 
     - name: Generate Demo Certificate with OpenSSL from CSR
