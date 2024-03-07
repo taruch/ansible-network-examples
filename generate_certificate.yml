@@ -24,7 +24,7 @@
 
     - name: Fix file permissions
       ansible.builtin.file:
-        path: /tmp/{{ client }}.cer
+        path: /tmp/{{ client }}_{{ trustpoint }}.cer
         owner: student
         group: student
         mode: '0644'
