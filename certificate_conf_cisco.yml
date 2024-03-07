@@ -31,7 +31,7 @@
           - 8.8.8.8
         domain_search:
           - "{{ domain_name }}"
-  
+
     - name: Configure host key
       tags:
         - key_generation
@@ -73,8 +73,8 @@
           cisco.ios.ios_config:
             lines:
               - enrollment terminal pem
-              - "subject-name C=US,ST=MD,L=Pasadena,O=Red Hat,OU=NAPS,CN={{ inventory_hostname }}.ansible.local"
-              - "subject-alt-name {{ inventory_hostname }}.ansible.local"
+              - "subject-name C=US,ST=MD,L=Pasadena,O=Red Hat,OU=NAPS,CN={{ inventory_hostname }}.{{ domain_name }}"
+              - "subject-alt-name {{ inventory_hostname }}_{{ trustpoint }}.{{ domain_name }}"
               - serial-number none
               - ip-address none
               - revocation-check none
@@ -120,7 +120,7 @@
         - name: Write CSR to file
           ansible.builtin.copy:
             content: "{{ csr }}"
-            dest: "/tmp/{{ inventory_hostname }}.csr"
+            dest: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.csr"
             owner: student
             group: student
             mode: '0644'
@@ -151,7 +151,7 @@
       block:
         - name: Slurp hosts file
           ansible.builtin.slurp:
-            src: "/tmp/{{ inventory_hostname }}.cer"
+            src: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
           register: slurpfile
           delegate_to: ansible-1
 

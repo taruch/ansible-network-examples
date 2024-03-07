@@ -5,7 +5,6 @@
   gather_facts: false
 
   vars:
-    ca_passphrase: "PASSW0RD"
     client: "{{ data.client | default('rtr1')}}"
     days: '20'
 
@@ -14,10 +13,10 @@
       ansible.builtin.file:
         path: "/tmp/{{ client }}.cer"
         state: absent
-  
+
     - name: Generate Demo Certificate with OpenSSL from CSR
       ansible.builtin.expect:
-        command: "openssl ca -config /opt/X509CA/openssl.cfg -in /tmp/{{ client }}.csr -days {{ days }} -out /tmp/{{ client }}.cer -notext"
+        command: "openssl ca -config /opt/X509CA/openssl.cfg -in /tmp/{{ client }}_{{ trustpoint }}.csr -days {{ days }} -out /tmp/{{ client }}_{{ trustpoint }}.cer -notext"
         responses:
           'Enter pass phrase': "{{ ca_passphrase }}"
           'certificate?': 'y'
