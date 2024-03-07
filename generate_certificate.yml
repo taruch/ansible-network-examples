@@ -16,7 +16,8 @@
 
     - name: Generate Demo Certificate with OpenSSL from CSR
       ansible.builtin.expect:
-        command: "openssl ca -config /opt/X509CA/openssl.cfg -in /tmp/{{ client }}_{{ trustpoint }}.csr -days {{ renewal_days }} -out /tmp/{{ client }}_{{ trustpoint }}.cer -notext"
+        command: <
+        "openssl ca -config /opt/X509CA/openssl.cfg -in /tmp/{{ client }}_{{ trustpoint }}.csr -days {{ renewal_days }} -out /tmp/{{ client }}_{{ trustpoint }}.cer -notext"
         responses:
           'Enter pass phrase': "{{ ca_passphrase }}"
           'certificate?': 'y'

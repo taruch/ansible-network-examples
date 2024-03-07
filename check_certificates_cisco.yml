@@ -56,6 +56,10 @@
           register: current_date
           delegate_to: ansible-1
 
+        - name: Debug Days left on certificate
+          ansible.builtin.debug:
+            msg: "{{ (((item.END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
+
         - name: Fail when certificate needs to be updated
           ansible.builtin.fail:
             msg: The certificate needs to be updated
