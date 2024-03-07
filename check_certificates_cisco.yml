@@ -59,6 +59,9 @@
         - name: Debug Days left on certificate
           ansible.builtin.debug:
             msg: "{{ (((item.END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
+          when:
+            - item.CERTIFICATE_TYPE == "Certificate"
+          loop: "{{ certs_parsed }}"
 
         - name: Fail when certificate needs to be updated
           ansible.builtin.fail:
