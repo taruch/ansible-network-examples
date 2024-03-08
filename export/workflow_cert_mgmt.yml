@@ -1,0 +1,573 @@
+---
+assets:
+    workflow_job_templates:
+    -   allow_simultaneous: false
+        ask_inventory_on_launch: false
+        ask_labels_on_launch: false
+        ask_limit_on_launch: false
+        ask_scm_branch_on_launch: false
+        ask_skip_tags_on_launch: false
+        ask_tags_on_launch: false
+        ask_variables_on_launch: false
+        description: ''
+        extra_vars: '---'
+        inventory:
+            name: Workshop Inventory
+            organization:
+                name: Default
+                type: organization
+            type: inventory
+        job_tags: null
+        limit: null
+        name: Cisco / Certificate Management
+        natural_key:
+            name: Cisco / Certificate Management
+            organization:
+                name: Default
+                type: organization
+            type: workflow_job_template
+        organization:
+            name: Default
+            type: organization
+        related:
+            labels: []
+            notification_templates_approvals: []
+            notification_templates_error: []
+            notification_templates_started: []
+            notification_templates_success: []
+            schedules:
+            -   description: ''
+                diff_mode: null
+                enabled: true
+                execution_environment: null
+                extra_data:
+                    days: '10'
+                    trustpoint: aaptest1
+                forks: null
+                inventory:
+                    name: Workshop Inventory
+                    organization:
+                        name: Default
+                        type: organization
+                    type: inventory
+                job_slice_count: null
+                job_tags: null
+                job_type: null
+                limit: null
+                name: Daily Certificate Check
+                natural_key:
+                    name: Daily Certificate Check
+                    type: schedule
+                    unified_job_template:
+                        name: Cisco / Certificate Management
+                        organization:
+                            name: Default
+                            type: organization
+                        type: workflow_job_template
+                related:
+                    credentials: []
+                rrule: DTSTART;TZID=America/New_York:20240306T221500
+                    RRULE:INTERVAL=1;FREQ=DAILY
+                scm_branch: null
+                skip_tags: null
+                timeout: null
+                unified_job_template:
+                    name: Cisco / Certificate Management
+                    organization:
+                        name: Default
+                        type: organization
+                    type: workflow_job_template
+                verbosity: null
+            survey_spec:
+                description: ''
+                name: ''
+                spec:
+                -   choices: ''
+                    default: ''
+                    max: 24
+                    min: 1
+                    new_question: true
+                    question_description: ''
+                    question_name: What is the name
+                        of the Trustpoint?
+                    required: true
+                    type: text
+                    variable: trustpoint
+                -   choices: ''
+                    default: ''
+                    max: 4
+                    min: 1
+                    new_question: true
+                    question_description: ''
+                    question_name: Minimum Days Before
+                        Certificate Renewal
+                    required: true
+                    type: text
+                    variable: days
+            workflow_nodes:
+            -   all_parents_must_converge: false
+                diff_mode: null
+                execution_environment: null
+                extra_data: {}
+                forks: null
+                identifier: Check for Trustpoint
+                inventory: null
+                job_slice_count: null
+                job_tags: null
+                job_type: null
+                limit: null
+                natural_key:
+                    identifier: Check for Trustpoint
+                    type: workflow_job_template_node
+                    workflow_job_template:
+                        name: Cisco / Certificate Management
+                        organization:
+                            name: Default
+                            type: organization
+                        type: workflow_job_template
+                related:
+                    always_nodes: []
+                    credentials: []
+                    failure_nodes:
+                    -   identifier: Create Trustpoint
+                        type: workflow_job_template_node
+                        workflow_job_template:
+                            name: Cisco / Certificate
+                                Management
+                            organization:
+                                name: Default
+                                type: organization
+                            type: workflow_job_template
+                    success_nodes:
+                    -   identifier: Check Certificate
+                            Date
+                        type: workflow_job_template_node
+                        workflow_job_template:
+                            name: Cisco / Certificate
+                                Management
+                            organization:
+                                name: Default
+                                type: organization
+                            type: workflow_job_template
+                scm_branch: null
+                skip_tags: null
+                timeout: null
+                unified_job_template:
+                    name: Cisco / Check for Certificate
+                    organization:
+                        name: Default
+                        type: organization
+                    type: job_template
+                verbosity: null
+                workflow_job_template:
+                    name: Cisco / Certificate Management
+                    organization:
+                        name: Default
+                        type: organization
+                    type: workflow_job_template
+            -   all_parents_must_converge: false
+                diff_mode: null
+                execution_environment: null
+                extra_data: {}
+                forks: null
+                identifier: Create Trustpoint
+                inventory: null
+                job_slice_count: null
+                job_tags: null
+                job_type: null
+                limit: null
+                natural_key:
+                    identifier: Create Trustpoint
+                    type: workflow_job_template_node
+                    workflow_job_template:
+                        name: Cisco / Certificate Management
+                        organization:
+                            name: Default
+                            type: organization
+                        type: workflow_job_template
+                related:
+                    always_nodes: []
+                    credentials: []
+                    failure_nodes: []
+                    success_nodes:
+                    -   identifier: Create Change Request
+                        type: workflow_job_template_node
+                        workflow_job_template:
+                            name: Cisco / Certificate
+                                Management
+                            organization:
+                                name: Default
+                                type: organization
+                            type: workflow_job_template
+                scm_branch: null
+                skip_tags: null
+                timeout: null
+                unified_job_template:
+                    name: Cisco / Trustpoint Create
+                    organization:
+                        name: Default
+                        type: organization
+                    type: job_template
+                verbosity: null
+                workflow_job_template:
+                    name: Cisco / Certificate Management
+                    organization:
+                        name: Default
+                        type: organization
+                    type: workflow_job_template
+            -   all_parents_must_converge: false
+                diff_mode: null
+                execution_environment: null
+                extra_data: {}
+                forks: null
+                identifier: Check Certificate Date
+                inventory: null
+                job_slice_count: null
+                job_tags: null
+                job_type: null
+                limit: null
+                natural_key:
+                    identifier: Check Certificate Date
+                    type: workflow_job_template_node
+                    workflow_job_template:
+                        name: Cisco / Certificate Management
+                        organization:
+                            name: Default
+                            type: organization
+                        type: workflow_job_template
+                related:
+                    always_nodes: []
+                    credentials: []
+                    failure_nodes:
+                    -   identifier: Create Change Request
+                        type: workflow_job_template_node
+                        workflow_job_template:
+                            name: Cisco / Certificate
+                                Management
+                            organization:
+                                name: Default
+                                type: organization
+                            type: workflow_job_template
+                    success_nodes: []
+                scm_branch: null
+                skip_tags: null
+                timeout: null
+                unified_job_template:
+                    name: Cisco /  Check Certificate
+                        Date
+                    organization:
+                        name: Default
+                        type: organization
+                    type: job_template
+                verbosity: null
+                workflow_job_template:
+                    name: Cisco / Certificate Management
+                    organization:
+                        name: Default
+                        type: organization
+                    type: workflow_job_template
+            -   all_parents_must_converge: false
+                diff_mode: null
+                execution_environment: null
+                extra_data: {}
+                forks: null
+                identifier: Create Change Request
+                inventory: null
+                job_slice_count: null
+                job_tags: null
+                job_type: null
+                limit: null
+                natural_key:
+                    identifier: Create Change Request
+                    type: workflow_job_template_node
+                    workflow_job_template:
+                        name: Cisco / Certificate Management
+                        organization:
+                            name: Default
+                            type: organization
+                        type: workflow_job_template
+                related:
+                    always_nodes: []
+                    credentials: []
+                    failure_nodes: []
+                    success_nodes:
+                    -   identifier: Generate Certificate
+                        type: workflow_job_template_node
+                        workflow_job_template:
+                            name: Cisco / Certificate
+                                Management
+                            organization:
+                                name: Default
+                                type: organization
+                            type: workflow_job_template
+                scm_branch: null
+                skip_tags: null
+                timeout: null
+                unified_job_template:
+                    name: ServiceNow / Change Create
+                    organization:
+                        name: Default
+                        type: organization
+                    type: job_template
+                verbosity: null
+                workflow_job_template:
+                    name: Cisco / Certificate Management
+                    organization:
+                        name: Default
+                        type: organization
+                    type: workflow_job_template
+            -   all_parents_must_converge: false
+                diff_mode: null
+                execution_environment: null
+                extra_data: {}
+                forks: null
+                identifier: Trustpoint Authenticate
+                    CA
+                inventory: null
+                job_slice_count: null
+                job_tags: null
+                job_type: null
+                limit: null
+                natural_key:
+                    identifier: Trustpoint Authenticate
+                        CA
+                    type: workflow_job_template_node
+                    workflow_job_template:
+                        name: Cisco / Certificate Management
+                        organization:
+                            name: Default
+                            type: organization
+                        type: workflow_job_template
+                related:
+                    always_nodes: []
+                    credentials: []
+                    failure_nodes: []
+                    success_nodes:
+                    -   identifier: Import Host Certificate
+                        type: workflow_job_template_node
+                        workflow_job_template:
+                            name: Cisco / Certificate
+                                Management
+                            organization:
+                                name: Default
+                                type: organization
+                            type: workflow_job_template
+                scm_branch: null
+                skip_tags: null
+                timeout: null
+                unified_job_template:
+                    name: Cisco / Trustpoint Authenticate
+                        CA
+                    organization:
+                        name: Default
+                        type: organization
+                    type: job_template
+                verbosity: null
+                workflow_job_template:
+                    name: Cisco / Certificate Management
+                    organization:
+                        name: Default
+                        type: organization
+                    type: workflow_job_template
+            -   all_parents_must_converge: false
+                diff_mode: null
+                execution_environment: null
+                extra_data: {}
+                forks: null
+                identifier: Generate Certificate
+                inventory: null
+                job_slice_count: null
+                job_tags: null
+                job_type: null
+                limit: null
+                natural_key:
+                    identifier: Generate Certificate
+                    type: workflow_job_template_node
+                    workflow_job_template:
+                        name: Cisco / Certificate Management
+                        organization:
+                            name: Default
+                            type: organization
+                        type: workflow_job_template
+                related:
+                    always_nodes: []
+                    credentials: []
+                    failure_nodes: []
+                    success_nodes:
+                    -   identifier: Trustpoint Authenticate
+                            CA
+                        type: workflow_job_template_node
+                        workflow_job_template:
+                            name: Cisco / Certificate
+                                Management
+                            organization:
+                                name: Default
+                                type: organization
+                            type: workflow_job_template
+                scm_branch: null
+                skip_tags: null
+                timeout: null
+                unified_job_template:
+                    name: CA / Generate Certificate
+                    organization:
+                        name: Default
+                        type: organization
+                    type: job_template
+                verbosity: null
+                workflow_job_template:
+                    name: Cisco / Certificate Management
+                    organization:
+                        name: Default
+                        type: organization
+                    type: workflow_job_template
+            -   all_parents_must_converge: false
+                diff_mode: null
+                execution_environment: null
+                extra_data: {}
+                forks: null
+                identifier: Import Host Certificate
+                inventory: null
+                job_slice_count: null
+                job_tags: null
+                job_type: null
+                limit: null
+                natural_key:
+                    identifier: Import Host Certificate
+                    type: workflow_job_template_node
+                    workflow_job_template:
+                        name: Cisco / Certificate Management
+                        organization:
+                            name: Default
+                            type: organization
+                        type: workflow_job_template
+                related:
+                    always_nodes: []
+                    credentials: []
+                    failure_nodes: []
+                    success_nodes:
+                    -   identifier: 71efbba9-47e2-43b8-aa3e-24d29ccca29b
+                        type: workflow_job_template_node
+                        workflow_job_template:
+                            name: Cisco / Certificate
+                                Management
+                            organization:
+                                name: Default
+                                type: organization
+                            type: workflow_job_template
+                scm_branch: null
+                skip_tags: null
+                timeout: null
+                unified_job_template:
+                    name: Cisco / Trustpoint Import
+                        Host Certificate
+                    organization:
+                        name: Default
+                        type: organization
+                    type: job_template
+                verbosity: null
+                workflow_job_template:
+                    name: Cisco / Certificate Management
+                    organization:
+                        name: Default
+                        type: organization
+                    type: workflow_job_template
+            -   all_parents_must_converge: false
+                diff_mode: null
+                execution_environment: null
+                extra_data: {}
+                forks: null
+                identifier: 71efbba9-47e2-43b8-aa3e-24d29ccca29b
+                inventory: null
+                job_slice_count: null
+                job_tags: null
+                job_type: null
+                limit: null
+                natural_key:
+                    identifier: 71efbba9-47e2-43b8-aa3e-24d29ccca29b
+                    type: workflow_job_template_node
+                    workflow_job_template:
+                        name: Cisco / Certificate Management
+                        organization:
+                            name: Default
+                            type: organization
+                        type: workflow_job_template
+                related:
+                    always_nodes: []
+                    credentials: []
+                    failure_nodes: []
+                    success_nodes:
+                    -   identifier: Update Change Req
+                        type: workflow_job_template_node
+                        workflow_job_template:
+                            name: Cisco / Certificate
+                                Management
+                            organization:
+                                name: Default
+                                type: organization
+                            type: workflow_job_template
+                scm_branch: null
+                skip_tags: null
+                timeout: null
+                unified_job_template:
+                    name: Cisco /  Check Certificate
+                        Date
+                    organization:
+                        name: Default
+                        type: organization
+                    type: job_template
+                verbosity: null
+                workflow_job_template:
+                    name: Cisco / Certificate Management
+                    organization:
+                        name: Default
+                        type: organization
+                    type: workflow_job_template
+            -   all_parents_must_converge: false
+                diff_mode: null
+                execution_environment: null
+                extra_data: {}
+                forks: null
+                identifier: Update Change Req
+                inventory: null
+                job_slice_count: null
+                job_tags: null
+                job_type: null
+                limit: null
+                natural_key:
+                    identifier: Update Change Req
+                    type: workflow_job_template_node
+                    workflow_job_template:
+                        name: Cisco / Certificate Management
+                        organization:
+                            name: Default
+                            type: organization
+                        type: workflow_job_template
+                related:
+                    always_nodes: []
+                    credentials: []
+                    failure_nodes: []
+                    success_nodes: []
+                scm_branch: null
+                skip_tags: null
+                timeout: null
+                unified_job_template:
+                    name: ServiceNow / Change Update
+                    organization:
+                        name: Default
+                        type: organization
+                    type: job_template
+                verbosity: null
+                workflow_job_template:
+                    name: Cisco / Certificate Management
+                    organization:
+                        name: Default
+                        type: organization
+                    type: workflow_job_template
+        scm_branch: null
+        skip_tags: null
+        survey_enabled: true
+        webhook_credential: null
+        webhook_service: ''
+changed: false
+failed: false
+...

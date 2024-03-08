@@ -1,0 +1,161 @@
+---
+- name: Setup Certificate Management Workflow
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  environment:
+    CONTROLLER_HOST: "https://student1.48s8p.example.opentlc.com"
+    CONTROLLER_USERNAME: admin
+    CONTROLLER_OAUTH_TOKEN: SrxgKQyFUmHDDZTqGf9WmmPK8QZnrS
+    # CONTROLLER_HOST: "{{ controller }}"
+    # CONTROLLER_PASSWORD: "{{ pass }}"
+    # CONTROLLER_USERNAME: "{{ user }}"
+    CONTROLLER_VERIFY_SSL: false
+
+  tasks:
+
+    - name: Save Execution Environments
+      block:
+        - name: Export Credential
+          ansible.controller.export:
+            execution_environments: 'ruch-network-ee'
+          register: export_results
+
+        - name: Debug the export_results
+          ansible.builtin.debug:
+            var: export_results
+            verbosity: 2
+
+        - name: Export project to file
+          ansible.builtin.copy:
+            content: "{{ export_results | to_nice_yaml(width=50, explicit_start=True, explicit_end=True) }}"
+            dest: ./execution_environments.yml
+            owner: student
+            group: student
+            mode: '0644'
+            backup: true
+
+    - name: Save Credential Types
+      block:
+        - name: Export Credential
+          ansible.controller.export:
+            credential_types: 'ServiceNow ITSM'
+          register: export_results
+
+        - name: Debug the export_results
+          ansible.builtin.debug:
+            verbosity: 2
+
+        - name: Export Credential Types to file
+          ansible.builtin.copy:
+            content: "{{ export_results | to_nice_yaml(width=50, explicit_start=True, explicit_end=True) }}"
+            dest: ./credential_types.yml
+            owner: student
+            group: student
+            mode: '0644'
+            backup: true
+
+    - name: Save Credentials
+      block:
+        - name: Export Credential
+          ansible.controller.export:
+            credentials:
+              - 'Gitlab Ansible_EE Token'
+              - 'ServiceNow ITSM'
+          register: export_results
+
+        - name: Debug the export_results
+          ansible.builtin.debug:
+            var: export_results
+            verbosity: 2
+
+        - name: Export credentials to file
+          ansible.builtin.copy:
+            content: "{{ export_results | to_nice_yaml(width=50, explicit_start=True, explicit_end=True) }}"
+            dest: ./credentials.yml
+            owner: student
+            group: student
+            mode: '0644'
+            backup: true
+
+    - name: Save Projects
+      block:
+        - name: Export project
+          ansible.controller.export:
+            projects: 'Ansible Network Examples'
+          register: export_results
+
+        - name: Debug the export_results
+          ansible.builtin.debug:
+            var: export_results
+            verbosity: 2
+
+        - name: Export project to file
+          ansible.builtin.copy:
+            content: "{{ export_results | to_nice_yaml(width=50, explicit_start=True, explicit_end=True) }}"
+            dest: ./projects.yml
+            owner: student
+            group: student
+            mode: '0644'
+            backup: true
+
+    - name: Save job templates
+      block:
+        - name: Export job templates
+          ansible.controller.export:
+            job_templates: 'all'
+          register: export_results
+
+        - name: Debug the export_results
+          ansible.builtin.debug:
+            var: export_results
+            verbosity: 2
+
+        - name: Export workflow job template to file
+          ansible.builtin.copy:
+            content: "{{ export_results | to_nice_yaml(width=50, explicit_start=True, explicit_end=True) }}"
+            dest: ./job_templates.yml
+            owner: student
+            group: student
+            mode: '0644'
+            backup: true
+
+    - name: Save workflows
+      block:
+        - name: Export workflow job template
+          ansible.controller.export:
+            workflow_job_templates: 'Cisco / Certificate Management'
+          register: export_results
+
+        - name: Debug the export_results
+          ansible.builtin.debug:
+            var: export_results
+            verbosity: 2
+
+        - name: Export workflow job template to file
+          ansible.builtin.copy:
+            content: "{{ export_results | to_nice_yaml(width=50, explicit_start=True, explicit_end=True) }}"
+            dest: ./Certificate_Management_workflow.yml
+            owner: student
+            group: student
+            mode: '0644'
+            backup: true
+
+
+
+    # - name: Export all assets
+    #   export:
+    #     all: True
+
+    # - name: Export all inventories
+    #   export:
+    #     inventory: 'all'
+
+    # - name: Export a job template named "My Template" and all Credentials
+    #   export:
+    #     job_templates: "My Template"
+    #     credential: 'all'
+
+    # - name: Export a list of inventories
+    #   export:
+    #     inventory: ['My Inventory 1', 'My Inventory 2']

@@ -1,0 +1,36 @@
+---
+assets:
+    projects:
+    -   allow_override: false
+        credential: null
+        default_environment: null
+        description: ''
+        local_path: _15__ansible_network_examples
+        name: Ansible Network Examples
+        natural_key:
+            name: Ansible Network Examples
+            organization:
+                name: Default
+                type: organization
+            type: project
+        organization:
+            name: Default
+            type: organization
+        related:
+            notification_templates_error: []
+            notification_templates_started: []
+            notification_templates_success: []
+        scm_branch: ''
+        scm_clean: false
+        scm_delete_on_update: false
+        scm_refspec: ''
+        scm_track_submodules: false
+        scm_type: git
+        scm_update_cache_timeout: 0
+        scm_update_on_launch: false
+        scm_url: https://github.com/taruch/ansible-network-examples.git
+        signature_validation_credential: null
+        timeout: 0
+changed: false
+failed: false
+...
