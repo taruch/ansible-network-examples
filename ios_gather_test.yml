@@ -1,0 +1,73 @@
+---
+- name: Gather configuration information from IOS devices
+  hosts: cisco_routers
+  gather_facts: no
+  vars:
+    net_device: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: Backup Config
+    cisco.ios.ios_config:
+      backup: yes
+      backup_options:
+        dir_path: /tmp/
+        filename: "backup_{{ net_device }}"
+
+  - name: Get Contents of backup dir 
+    ansible.builtin.command:
+      cmd: 'ls -al /tmp/'
+
+  - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: /backup/
+        state: directory
+        mode: "755"
+      delegate_to: backup-server
+      become: true
+      run_once: true
+
+  - name: Copy to host
+    ansible.builtin.copy:
+      src: '/tmp/backup_{{ net_device }}'
+      dest: '/backup/'
+    delegate_to: backup-server
+    connection: ssh
+    become: true
+
+
+#  - name: Gather network information as structured data
+#    cisco.ios.ios_facts:
+#      gather_network_resources:
+#        - 'all'
+#        # - 'ntp_global'
+#        # - 'logging_global'
+#        # - 'hostname'
+#        # - 'snmp_server'
+#        # - 'vlans'
+#        # - 'interfaces'
+#        # - 'l2_interfaces'
+#        # - 'l3_interfaces'
+#        # - 'lag_interfaces'
+#        # - 'lldp_interfaces'
+#        # - 'lldp_global'
+#        # - 'lacp'
+#        # - 'lacp_interfaces'
+#        # - 'service'
+#        # - 'bgp_global'
+#        # - 'bgp_address_family'
+#        # - 'ospf_interfaces'
+#        # - 'ospfv2'
+#        # - 'ospfv3'
+#        # - 'prefix_lists'
+#        # - 'static_routes'
+#        # - 'acl_interfaces'
+#
+#  - name: Print out
+#    ansible.builtin.debug:
+#      msg: "{{ ansible_network_resources | to_nice_yaml }}"
+#
+#  - name: Store VLAN facts to host_vars
+#    ansible.builtin.copy:
+#      content: "{{ ansible_network_resources | to_nice_yaml }}"
+#      dest: "./host_vars/{{ inventory_hostname }}"
+#    delegate_to: localhost 
