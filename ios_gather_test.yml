@@ -1,6 +1,6 @@
 ---
 - name: Gather configuration information from IOS devices
-  hosts: cisco_routers
+  hosts: cisco
   gather_facts: no
   vars:
     net_device: "{{ inventory_hostname }}"
