@@ -5,7 +5,7 @@
 
   vars:
     domain_name: ansible.local
-
+    ca_profile: CACERT
   tasks:
     - name: Backup Config
       tags:
@@ -38,7 +38,7 @@
     #     answer: "yes"
     #   loop:
     #     - conf t
-    #     - no crypto pki trustpoint {{ trustpoint }}
+    #     - no crypto pki trustpoint {{ CACERT }}
 
     - name: Create a CA Profile on Router (need to test)
       tags:
@@ -72,12 +72,12 @@
             var: rsa_key_output
             verbosity: 3
 
-    - name: Generate CSR on Switch
+    - name: Generate Certificate Signing Request on Router (need to test)
       tags:
         - csr_create
         - never
       block:
-        - name: Clear current CSR (need to test)
+        - name: Clear current CSR
           junipernetworks.junos.junos_command:
             commands: clear security pki certificate-request certificate-id rtr3
 
@@ -106,7 +106,7 @@
         - name: Write CSR to file
           ansible.builtin.copy:
             content: "{{ csr }}"
-            dest: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.csr"
+            dest: "/tmp/{{ inventory_hostname }}_{{ ca_profile }}.csr"
             owner: student
             group: student
             mode: '0644'
@@ -123,7 +123,7 @@
           ansible.builtin.set_fact:
             cacert_var: "{{ lookup('ansible.builtin.template', './templates/rtr_authenticate_CA.j2') | split('\n') }}"
 
-        - name: Authenticate the trustpoint with the CA Cert
+        - name: Authenticate the ca_profile with the CA Cert
           ansible.netcommon.cli_command:
             command: "{{ item }}"
             sendonly: true
@@ -139,7 +139,7 @@
       block:
         - name: Slurp hosts file
           ansible.builtin.slurp:
-            src: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
+            src: "/tmp/{{ inventory_hostname }}_{{ ca_profile }}.cer"
           register: slurpfile
           delegate_to: ansible-1
 
