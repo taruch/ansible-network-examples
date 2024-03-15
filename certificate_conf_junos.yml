@@ -1,0 +1,178 @@
+---
+- name: Configure Certificate on IOS XE device
+  hosts: juniper
+  gather_facts: false
+
+  vars:
+    domain_name: ansible.local
+
+  tasks:
+    - name: Backup Config
+      tags:
+        - backup
+        - never
+      junipernetworks.junos.junos_config:
+        backup: true
+        backup_format: json
+        dir_path: /tmp/
+
+    - name: Configure hostname and domain name
+      tags:
+        - hostinfo
+        - always
+      junipernetworks.junos.junos_system:
+        hostname: "{{ inventory_hostname }}"
+        domain_name: "{{ domain_name }}"
+        name_servers:
+          - 8.8.8.8
+        domain_search:
+          - "{{ domain_name }}"
+
+    # - name: Delete the Trustpoint on Switch
+    #   tags:
+    #     - trustpoint_delete
+    #     - never
+    #   ansible.netcommon.cli_command:
+    #     command: "{{ item }}"
+    #     prompt: "this?"
+    #     answer: "yes"
+    #   loop:
+    #     - conf t
+    #     - no crypto pki trustpoint {{ trustpoint }}
+
+    - name: Create a CA Profile on Router (need to test)
+      tags:
+        - trustpoint_create
+        - never
+      block:
+        - name: Create the CA Profile
+          junipernetworks.junos.junos_config:
+            lines: set security pki ca-profile ca-profile-ipsec ca-identity ansible-local 
+            update: merge
+            confirm_commit: true
+          register: create_caprofile_output
+
+        - name: Debug output
+          ansible.builtin.debug:
+            var: create_caprofile_output
+            verbosity: 3
+
+    - name: Generate a certificate pair (need to test)
+      tags:
+        - key_generation
+        - never
+      block:
+        - name: Generate the RSA key (need to test)
+          junipernetworks.junos.junos_command:
+            commands: request security pki generate-key-pair certificate-id rtr3_local size 2048 type rsa
+          register: rsa_key_output
+
+        - name: Debug output
+          ansible.builtin.debug:
+            var: rsa_key_output
+            verbosity: 3
+
+    - name: Generate CSR on Switch
+      tags:
+        - csr_create
+        - never
+      block:
+        - name: Clear current CSR (need to test)
+          junipernetworks.junos.junos_command:
+            commands: clear security pki certificate-request certificate-id rtr3
+
+        - name: Generate the CSR
+          junipernetworks.junos.junos_command:
+            command: >
+              "request security pki generate-certificate-request "
+              "certificate-id rtr3 domain-name rtr3.ansible.local "
+              "subject 'CN=rtr3.ansible.local,OU=NAPS,O=Red Hat,L=Pasadena,ST=MD,C=US'"
+          register: csr_output
+
+        - name: Debug csr_output
+          ansible.builtin.debug:
+            var: csr_output
+            verbosity: 3
+
+        - name: Debug the Enrolled CSR
+          ansible.builtin.set_fact:
+            csr: "{{ (csr_output.stdout | split('\n\n'))[2] }}"
+
+        - name: Debug output
+          ansible.builtin.debug:
+            var: csr
+            verbosity: 3
+
+        - name: Write CSR to file
+          ansible.builtin.copy:
+            content: "{{ csr }}"
+            dest: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.csr"
+            owner: student
+            group: student
+            mode: '0644'
+            backup: true
+          delegate_to: ansible-1
+          become: true
+
+    - name: Add the CA Cert to the Trustpoint
+      tags:
+        - ca_cert_trustpoint
+        - never
+      block:
+        - name: Create the template variable
+          ansible.builtin.set_fact:
+            cacert_var: "{{ lookup('ansible.builtin.template', './templates/rtr_authenticate_CA.j2') | split('\n') }}"
+
+        - name: Authenticate the trustpoint with the CA Cert
+          ansible.netcommon.cli_command:
+            command: "{{ item }}"
+            sendonly: true
+          loop: "{{ cacert_var }}"
+
+
+    - name: Add the host Cert to the Trustpoint
+      vars:
+        certificate_on_host: false
+      tags:
+        - import_host_certificate
+        - never
+      block:
+        - name: Slurp hosts file
+          ansible.builtin.slurp:
+            src: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
+          register: slurpfile
+          delegate_to: ansible-1
+
+        - name: Copy the host cert to EE
+          ansible.builtin.set_fact:
+            host_cert: "{{ (slurpfile['content'] | b64decode).splitlines() }}"
+
+        - name: Gather_facts and debug
+          ansible.netcommon.cli_command:
+            command: sho crypto pki certificates
+          register: certificates
+
+        - name: Check for Certificate and Set certificate_on_host
+          ansible.builtin.set_fact:
+            certificate_on_host: true
+          when: inventory_hostname in certificates.stdout
+
+        - name: Create the template variable
+          ansible.builtin.set_fact:
+            host_cert_var: "{{ lookup('ansible.builtin.template', './templates/rtr_import_certificate.j2') | split('\n') }}"
+
+        - name: Import the host Certificate
+          ansible.netcommon.cli_command:
+            command: "{{ item }}"
+            sendonly: true
+          loop: "{{ host_cert_var }}"
+
+    - name: Set Client Name for Follow-on Templates
+      tags:
+        - always
+      ansible.builtin.set_stats:
+        data:
+          client: "{{ inventory_hostname }}"
+
+
+...

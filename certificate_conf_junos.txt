@@ -1,0 +1,277 @@
+# https://www.digicert.com/kb/ssl-support/openssl-quick-reference-guide.htm
+
+"""
+openssl genrsa -out yourdomain.key 2048
+and
+openssl req -new -key yourdomain.key -out yourdomain.csr
+"""
+or
+openssl req -new -newkey rsa:2048 -keyout server.key -out server.csr
+or
+openssl req -new \
+-newkey rsa:2048 -nodes -keyout {{ host }}.key \
+-out {{ host }}.csr \
+-subj "/C=US/ST=MD/L=Pasadena/O=Red Hat, Inc./OU=NAPS/CN={{ host }}.ansible.local"
+
+openssl ca -config /opt/X509CA/openssl.cfg -notext -out C.crt -infiles C.csr
+
+
+
+
+JUNIPER:
+https://www.juniper.net/documentation/us/en/software/junos/vpn-ipsec/topics/topic-map/security-configuring-ca-and-local-certificates.html
+https://www.blackhole-networks.com/CertVPN/pki_setup.html
+
+Create a CA profile:
+https://www.juniper.net/documentation/us/en/software/junos/vpn-ipsec/topics/topic-map/security-configuring-certificate-authority-profiles.html#id-example-configuring-a-ca-profile
+
+ec2-user@rtr3> configure        
+Entering configuration mode
+
+[edit]
+ec2-user@rtr3# set security pki ca-profile ca-profile-ipsec ca-identity ansible-local 
+
+[edit]
+ec2-user@rtr3# commit 
+commit complete
+
+
+Generate a certificate pair:
+https://www.juniper.net/documentation/us/en/software/junos/cli-reference/topics/ref/command/request-security-pki-generate-key-pair-certificate-id.html
+
+ec2-user@rtr3> request security pki generate-key-pair certificate-id rtr3_local size 2048 type rsa 
+Generated key pair rtr3_local, key size 2048 bits
+
+ec2-user@rtr3# edit
+
+ec2-user@rtr3# edit security pki 
+
+ec2-user@rtr3# set ca-profile CACERT ca-identity CAcert revocation-check disable 
+
+[edit security pki]
+
+ec2-user@rtr3# show 
+ca-profile ca-profile-ipsec {
+    ca-identity ansible-local;
+}
+ca-profile CACERT {
+    ca-identity CAcert;
+    revocation-check {
+        disable;
+    }
+}
+
+ec2-user@rtr3# commit 
+commit complete
+
+[edit security pki]
+ec2-user@rtr3# exit 
+
+[edit]
+ec2-user@rtr3# exit 
+Exiting configuration mode
+
+
+ec2-user@rtr3> request security pki ca-certificate load ca-profile CACERT filename /var/tmp/cacert.pem           
+Fingerprint:
+  bf:90:b0:2a:6e:a6:7c:67:c6:f8:2c:e1:42:30:d6:78:3e:d5:aa:3f (sha1)
+  9f:09:69:64:8d:47:a4:83:52:46:ee:51:26:e3:ea:87 (md5)
+  87:56:d5:8b:9c:5b:80:74:7f:84:c8:47:a0:3d:f6:bd:44:81:9c:37:81:e9:90:99:bb:b4:09:7d:7b:98:7b:75 (sha256)
+Do you want to load this CA certificate ? [yes,no] (no) yes 
+
+CA certificate for profile CACERT loaded successfully
+
+ec2-user@rtr3> request security pki ca-certificate verify ca-profile CACERT 
+CA certificate CACERT verified successfully. revocation check is disabled
+
+
+ec2-user@rtr3> request security pki generate-certificate-request certificate-id rtr3 domain-name rtr3.ansible.local subject "CN=rtr3.ansible.local,OU=NAPS,O=Red Hat,L=Pasadena,ST=MD,C=US"                
+Generated certificate request
+
+-----BEGIN CERTIFICATE REQUEST-----
+MIIC4DCCAcgCAQAwazEbMBkGA1UEAxMScnRyMy5hbnNpYmxlLmxvY2FsMQ0wCwYD
+VQQLEwROQVBTMRAwDgYDVQQKEwdSZWQgSGF0MREwDwYDVQQHEwhQYXNhZGVuYTEL
+MAkGA1UECBMCTUQxCzAJBgNVBAYTAlVTMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEA5iJzI8dtDC0HFATDoYpOpHFfrrIB1VOcBI3i1iEEgNU7goW4h02w
+elxAkShmLJKj3gTzi9JNREfk2OP6djOzKmXgrs6J9lRbtBo5lTOPujT78055hzmU
+D4fDE9oGAc7LE1mx+Jf1mPYGLSspZhOD5SVcr0lJwA1H9ip3BctNj6UVYLddAb1N
+alfUkm+5+gdxi9iXoDnAmEzhYUPBCI93zALiE3DYhLCTIUlHqFL1aFN7AspxK04u
+ikf1zzCGgv0V12dfNx+3G+1GGbEbGl/Li/kGS67jrQY3GCNorVaYppvI/JMg+VxQ
+GWZRKBg+Zv3dTfbE60s1hLswDL/QdkxU+QIDAQABoDAwLgYJKoZIhvcNAQkOMSEw
+HzAdBgNVHREEFjAUghJydHIzLmFuc2libGUubG9jYWwwDQYJKoZIhvcNAQEFBQAD
+ggEBABO4TUFxXNV9MvRJSZspUMb867qAc1T0kEP5ApsiQ1Jnv8LYwkG3wITjufNn
+28cJVovpdJSy3pcOsnQTL5QRvr712O3nTcySz4ZOfrbbRyiGgI42X+riGQCfLDDR
+2Zy9a+PTFUVow5reiikOE6X9ImpYBSltvmFAm44MYeNoaf8R2Wu25P/EQ7gOvoFk
+gtE/IXovvj0CIZW95DLnjIbjhGjyjifcB6JgnzAl5Kt6bZukiLqcEpbJ2r197U91
+kHi8fHi43lYq+HXcsqUElERGYGLpnm8I17p4YGYHRAebCnvbtUEtZsPmz4XjNOg2
+imla7jh+lekw8yZgzwJZ5h+fxe4=
+-----END CERTIFICATE REQUEST-----
+Fingerprint:
+5f:a1:d0:70:08:f6:ef:57:9b:99:8f:68:91:30:68:97:9b:7c:4a:0d (sha1)
+a3:56:83:bb:ee:33:f4:80:5c:fc:b4:30:cd:34:35:65 (md5)
+93:04:f8:06:45:be:79:3e:e6:11:07:61:31:f0:a8:da:63:62:07:53:e8:60:94:22:8b:21:7c:fa:cd:45:a7:b8 (sha256)
+
+ec2-user@rtr3> scp juniper@3.137.194.74:~/rtr3.crt /var/tmp/                                                                          
+juniper@3.137.194.74's password: 
+rtr3.crt                                                                                                100% 3807     1.8MB/s   00:00    
+
+
+ec2-user@rtr3> request security pki local-certificate load certificate-id rtr3 filename /var/tmp/rtr3.crt    
+
+
+ec2-user@rtr3> request security pki local-certificate verify certificate-id rtr3 
+local certificate rtr3 verification success
+
+
+
+CERTIFICATE SHOW COMMANDS:
+ec2-user@rtr3> show security pki certificate-request                
+Certificate identifier: rtr3_local
+  Certificate request not present
+
+Certificate identifier: rtr3
+  Issued to: rtr3.ansible.local
+  Public key algorithm: rsaEncryption(2048 bits)
+
+ec2-user@rtr3> show security pki ca-certificate ca-profile CACERT 
+LSYS: root-logical-system
+  CA profile: CACERT
+Certificate identifier: CACERT
+  Issued to: Todd Ruch, Issued by: C = US, O = Red Hat, CN = Todd Ruch
+  Validity:
+    Not before: 06-29-2023 15:16 UTC
+    Not after: 06-28-2024 15:16 UTC
+  Public key algorithm: rsaEncryption(2048 bits)
+  Keypair Location: Keypair generated locally
+ec2-user@rtr3> show security pki local-certificate certificate-id rtr3 
+LSYS: root-logical-system
+Certificate identifier: rtr3
+  Issued to: rtr3.ansible.local, Issued by: C = US, O = Red Hat, CN = Todd Ruch
+  Validity:
+    Not before: 03-14-2024 21:14 UTC
+    Not after: 03-14-2025 21:14 UTC
+  Public key algorithm: rsaEncryption(2048 bits)
+  Keypair Location: Keypair generated locally
+
+ec2-user@rtr3> show security pki local-certificate certificate-id rtr3 detail  
+LSYS: root-logical-system
+Certificate identifier: rtr3
+  Certificate version: 1
+
+  Serial number:
+    hexadecimal: 0x00000014
+    decimal: 20
+  Issuer:
+    Organization: Red Hat, Country: US, Common name: Todd Ruch
+  Subject:
+    Organization: Red Hat, Organizational unit: NAPS, Country: US, State: MD, Locality: Pasadena, Common name: rtr3.ansible.local
+  Subject string: 
+    C=US, ST=MD, L=Pasadena, O=Red Hat, OU=NAPS, CN=rtr3.ansible.local
+  Cert-Chain: Todd Ruch
+  Validity:
+    Not before: 03-14-2024 21:14 UTC
+    Not after: 03-14-2025 21:14 UTC
+  Public key algorithm: rsaEncryption(2048 bits)
+    30:82:01:0a:02:82:01:01:00:e6:22:73:23:c7:6d:0c:2d:07:14:04
+    c3:a1:8a:4e:a4:71:5f:ae:b2:01:d5:53:9c:04:8d:e2:d6:21:04:80
+    d5:3b:82:85:b8:87:4d:b0:7a:5c:40:91:28:66:2c:92:a3:de:04:f3
+    8b:d2:4d:44:47:e4:d8:e3:fa:76:33:b3:2a:65:e0:ae:ce:89:f6:54
+    5b:b4:1a:39:95:33:8f:ba:34:fb:f3:4e:79:87:39:94:0f:87:c3:13
+    da:06:01:ce:cb:13:59:b1:f8:97:f5:98:f6:06:2d:2b:29:66:13:83
+    e5:25:5c:af:49:49:c0:0d:47:f6:2a:77:05:cb:4d:8f:a5:15:60:b7
+    5d:01:bd:4d:6a:57:d4:92:6f:b9:fa:07:71:8b:d8:97:a0:39:c0:98
+    4c:e1:61:43:c1:08:8f:77:cc:02:e2:13:70:d8:84:b0:93:21:49:47
+    a8:52:f5:68:53:7b:02:ca:71:2b:4e:2e:8a:47:f5:cf:30:86:82:fd
+    15:d7:67:5f:37:1f:b7:1b:ed:46:19:b1:1b:1a:5f:cb:8b:f9:06:4b
+    ae:e3:ad:06:37:18:23:68:ad:56:98:a6:9b:c8:fc:93:20:f9:5c:50
+    19:66:51:28:18:3e:66:fd:dd:4d:f6:c4:eb:4b:35:84:bb:30:0c:bf
+    d0:76:4c:54:f9:02:03:01:00:01
+  Signature algorithm: md5WithRSAEncryption
+  Fingerprint:
+    90:f6:ac:8b:fe:1e:a3:44:fd:cd:fc:d7:7a:96:86:64:2e:ee:06:8d (sha1)
+    20:14:e2:e0:b2:40:75:9b:23:04:bd:77:3f:7a:a6:da (md5)
+    65:59:f7:77:27:0e:0c:6e:a1:d8:88:b7:cd:b0:1b:fd:d4:7b:aa:5a:79:29:f5:41:a6:40:cd:28:ea:df:d9:2f (sha256)
+  Auto-re-enrollment:
+    Status: Disabled
+    Next trigger time: Timer not started
+
+
+RESETTING CERTIFICATE:
+
+On Junos RTR:
+ec2-user@rtr3> clear security pki certificate-request certificate-id rtr3 
+
+ec2-user@rtr3> ...tr3.ansible.local subject "CN=rtr3.ansible.local,OU=NAPS,O=Red Hat,L=Pasadena,ST=MD,C=US"    
+Generated certificate request
+-----BEGIN CERTIFICATE REQUEST-----
+MIIC4DCCAcgCAQAwazEbMBkGA1UEAxMScnRyMy5hbnNpYmxlLmxvY2FsMQ0wCwYD
+VQQLEwROQVBTMRAwDgYDVQQKEwdSZWQgSGF0MREwDwYDVQQHEwhQYXNhZGVuYTEL
+MAkGA1UECBMCTUQxCzAJBgNVBAYTAlVTMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEA5iJzI8dtDC0HFATDoYpOpHFfrrIB1VOcBI3i1iEEgNU7goW4h02w
+elxAkShmLJKj3gTzi9JNREfk2OP6djOzKmXgrs6J9lRbtBo5lTOPujT78055hzmU
+D4fDE9oGAc7LE1mx+Jf1mPYGLSspZhOD5SVcr0lJwA1H9ip3BctNj6UVYLddAb1N
+alfUkm+5+gdxi9iXoDnAmEzhYUPBCI93zALiE3DYhLCTIUlHqFL1aFN7AspxK04u
+ikf1zzCGgv0V12dfNx+3G+1GGbEbGl/Li/kGS67jrQY3GCNorVaYppvI/JMg+VxQ
+GWZRKBg+Zv3dTfbE60s1hLswDL/QdkxU+QIDAQABoDAwLgYJKoZIhvcNAQkOMSEw
+HzAdBgNVHREEFjAUghJydHIzLmFuc2libGUubG9jYWwwDQYJKoZIhvcNAQEFBQAD
+ggEBABO4TUFxXNV9MvRJSZspUMb867qAc1T0kEP5ApsiQ1Jnv8LYwkG3wITjufNn
+28cJVovpdJSy3pcOsnQTL5QRvr712O3nTcySz4ZOfrbbRyiGgI42X+riGQCfLDDR
+2Zy9a+PTFUVow5reiikOE6X9ImpYBSltvmFAm44MYeNoaf8R2Wu25P/EQ7gOvoFk
+gtE/IXovvj0CIZW95DLnjIbjhGjyjifcB6JgnzAl5Kt6bZukiLqcEpbJ2r197U91
+kHi8fHi43lYq+HXcsqUElERGYGLpnm8I17p4YGYHRAebCnvbtUEtZsPmz4XjNOg2
+imla7jh+lekw8yZgzwJZ5h+fxe4=
+-----END CERTIFICATE REQUEST-----
+Fingerprint:
+5f:a1:d0:70:08:f6:ef:57:9b:99:8f:68:91:30:68:97:9b:7c:4a:0d (sha1)
+a3:56:83:bb:ee:33:f4:80:5c:fc:b4:30:cd:34:35:65 (md5)
+93:04:f8:06:45:be:79:3e:e6:11:07:61:31:f0:a8:da:63:62:07:53:e8:60:94:22:8b:21:7c:fa:cd:45:a7:b8 (sha256)
+
+
+On CA Host:
+[student@ansible-1 X509CA]$ openssl ca -config openssl.cfg -notext -out rtr3.pem -in rtr3.csr
+Using configuration from openssl.cfg
+Enter pass phrase for /opt/X509CA/demoCA/private/cakey.pem:
+Check that the request matches the signature
+Signature ok
+Certificate Details:
+        Serial Number: 20 (0x14)
+        Validity
+            Not Before: Mar 14 21:14:10 2024 GMT
+            Not After : Mar 14 21:14:10 2025 GMT
+        Subject:
+            countryName               = US
+            stateOrProvinceName       = MD
+            localityName              = Pasadena
+            organizationName          = Red Hat
+            organizationalUnitName    = NAPS
+            commonName                = rtr3.ansible.local
+Certificate is to be certified until Mar 14 21:14:10 2025 GMT (365 days)
+Sign the certificate? [y/n]:y
+
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+Write out database with 1 new entries
+Data Base Updated
+[student@ansible-1 X509CA]$ scp rtr3.pem juniper@3.137.194.74:~/
+juniper@3.137.194.74's password: 
+rtr3.pem                                                                                                                  100% 1127   733.2KB/s   00:00    
+[student@ansible-1 X509CA]$ ssh rtr3
+Last login: Thu Mar 14 18:14:40 2024 from 3.145.174.25
+--- JUNOS 22.3R2.12 Kernel 64-bit XEN JNPR-12.1-20221212.98a33a0_buil
+ec2-user@rtr3> en
+               ^
+unknown command.
+ec2-user@rtr3> scp juniper@3.137.194.74:~/rtr3.pem /var/tmp/ 
+juniper@3.137.194.74's password: 
+rtr3.pem                                                                                                                  100% 1127   903.7KB/s   00:00    
+
+ec2-user@rtr3> request security pki local-certificate load certificate-id rtr3 filename /var/tmp/rtr3.pem 
+error: Command aborted as certificate already exists. Retry after clearing the existing certificate
+
+ec2-user@rtr3> clear security pki local-certificate certificate-id rtr3 
+
+ec2-user@rtr3> request security pki local-certificate load certificate-id rtr3 filename /var/tmp/rtr3.pem    
+Local certificate loaded successfully
+
+ec2-user@rtr3> request security pki local-certificate verify certificate-id rtr3 
+local certificate rtr3 verification success

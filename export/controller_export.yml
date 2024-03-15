@@ -141,21 +141,4 @@
             mode: '0644'
             backup: true
 
-
-
-    # - name: Export all assets
-    #   export:
-    #     all: True
-
-    # - name: Export all inventories
-    #   export:
-    #     inventory: 'all'
-
-    # - name: Export a job template named "My Template" and all Credentials
-    #   export:
-    #     job_templates: "My Template"
-    #     credential: 'all'
-
-    # - name: Export a list of inventories
-    #   export:
-    #     inventory: ['My Inventory 1', 'My Inventory 2']
+...
