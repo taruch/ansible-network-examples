@@ -1,6 +1,6 @@
 ---
-- name: Configure Certificate on IOS XE device
-  hosts: juniper
+- name: Configure Certificate on Juniper device
+  hosts: rtr1
   gather_facts: false
 
   vars:
@@ -83,7 +83,7 @@
 
         - name: Generate the CSR
           junipernetworks.junos.junos_command:
-            command: >
+            commands: >
               "request security pki generate-certificate-request "
               "certificate-id rtr3 domain-name rtr3.ansible.local "
               "subject 'CN=rtr3.ansible.local,OU=NAPS,O=Red Hat,L=Pasadena,ST=MD,C=US'"
@@ -114,11 +114,26 @@
           delegate_to: ansible-1
           become: true
 
-    - name: Add the CA Cert to the Trustpoint
+    # SIGN THE CERT with the generate certificate playbook
+
+    - name: Add the CA Cert to the CA Profile
       tags:
-        - ca_cert_trustpoint
+        - ca_cert_ca_profile
         - never
       block:
+        # might need to use expect here as the junos_command doesn't have prompt/response arguments
+        # - name: Copy the cert from the CA Server to Juniper device
+        #   junipernetworks.junos.junos_command:
+        #     commands:
+        #
+        - name: Copy the cert from the CA Server to Juniper device
+          ansible.builtin.expect:
+            command: scp juniper@3.137.194.74:~/rtr3.crt /var/tmp/ 
+            responses:
+              'Enter pass phrase': "{{ ca_passphrase }}"
+              'certificate?': 'y'
+              'commit?': 'y'
+
         - name: Create the template variable
           ansible.builtin.set_fact:
             cacert_var: "{{ lookup('ansible.builtin.template', './templates/rtr_authenticate_CA.j2') | split('\n') }}"
