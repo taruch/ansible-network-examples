@@ -68,29 +68,6 @@
             var: create_caprofile_output
             verbosity: 3
 
-    - name: Add the CA Cert to the CA Profile (works)
-      tags:
-        - ca_cert_ca_profile
-        - never
-      block:
-        - name: copy cert to {{ inventory_hostname }}
-          ansible.netcommon.cli_command:
-            command: "scp juniper@{{ ca_host }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
-            prompt: 
-              - "Are you sure you want to continue connecting"
-              - "password"
-            answer: 
-              - "yes"
-              - "{{ ca_pass }}"
-          register: copy_output
-
-        - name: Add the CA Certificate to the CA Profile
-          ansible.netcommon.cli_command:
-            command: "request security pki ca-certificate load ca-profile CACERT filename /var/tmp/cacert.pem"
-            prompt: "certificate"
-            answer: "yes"
-          register: copy_output
-
     - name: Generate a certificate pair (works)
       tags:
         - key_generation
@@ -148,6 +125,35 @@
           delegate_to: ca-host
           become: true
 
+    - name: Add the CA Cert to the CA Profile (check that this works on new host)
+      tags:
+        - ca_cert_ca_profile
+        - never
+      block:
+        - name: copy cert to {{ inventory_hostname }}
+          ansible.netcommon.cli_command:
+            command: "request security pki ca-certificate load ca-profile CACERT"
+            prompt: 
+              - "Are you sure you want to continue connecting"
+            answer: 
+              - "yes"
+          register: copy_output
+
+        - name: copy cert to {{ inventory_hostname }}
+          ansible.netcommon.cli_command:
+            command: "scp juniper@{{ ca_host }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
+            prompt: 
+              - "password"
+            answer: 
+              - "{{ ca_pass }}"
+          register: copy_output
+
+        - name: Add the CA Certificate to the CA Profile
+          ansible.netcommon.cli_command:
+            command: "request security pki ca-certificate load ca-profile CACERT filename /var/tmp/cacert.pem"
+            prompt: "certificate"
+            answer: "yes"
+          register: copy_output
 
     - name: Add the host Cert to the CA Profile
       tags:
