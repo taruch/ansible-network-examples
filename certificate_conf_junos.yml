@@ -39,7 +39,7 @@
     #     answer: "yes"
     #   loop:
     #     - conf t
-    #     - no crypto pki trustpoint {{ trustpoint }}
+    #     - no crypto pki trustpoint {{ CACERT }}
 
     - name: Create a CA Profile on Router (works)
       tags:
@@ -111,7 +111,7 @@
         - csr_create
         - never
       block:
-        - name: Clear current CSR (need to test)
+        - name: Clear current CSR
           junipernetworks.junos.junos_command:
             commands: "clear security pki certificate-request certificate-id {{ inventory_hostname }}_local"
 
