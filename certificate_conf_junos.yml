@@ -132,7 +132,7 @@
       block:
         - name: copy cert to {{ inventory_hostname }}
           ansible.netcommon.cli_command:
-            command: "request security pki ca-certificate load ca-profile CACERT"
+            command: "clear security pki ca-certificate ca-profile CACERT"
             prompt: 
               - "Are you sure you want to continue connecting"
             answer: 
@@ -155,7 +155,7 @@
             answer: "yes"
           register: copy_output
 
-    - name: Add the host Cert to the CA Profile
+    - name: Add the host Cert to the CA Profile (works)
       tags:
         - import_host_certificate
         - never
@@ -170,8 +170,6 @@
         - name: Clear the Current Host Certificate in the CA Profile
           ansible.netcommon.cli_command:
             command: "clear security pki local-certificate certificate-id {{ inventory_hostname }}_local"
-            # prompt: "certificate"
-            # answer: "yes"
           register: copy_output
 
         - name: Add the Host Certificate to the CA Profile
