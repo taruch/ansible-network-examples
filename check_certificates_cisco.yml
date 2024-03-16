@@ -47,7 +47,7 @@
           vars:
             template: "/usr/local/lib/python3.9/site-packages/ntc_templates/templates/cisco_ios_show_crypto_pki_certificates.textfsm"
           ansible.builtin.set_fact:
-            certs_parsed: "{{ certificates.stdout | parse_cli_textfsm(template) }}"
+            certs_parsed: "{{ certificates.stdout | ansible.netcommon.parse_cli_textfsm(template) }}"
 
         - name: Get System Time
           ansible.builtin.command:
