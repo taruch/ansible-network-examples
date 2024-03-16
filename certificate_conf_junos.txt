@@ -1,23 +1,3 @@
-# https://www.digicert.com/kb/ssl-support/openssl-quick-reference-guide.htm
-
-"""
-openssl genrsa -out yourdomain.key 2048
-and
-openssl req -new -key yourdomain.key -out yourdomain.csr
-"""
-or
-openssl req -new -newkey rsa:2048 -keyout server.key -out server.csr
-or
-openssl req -new \
--newkey rsa:2048 -nodes -keyout {{ host }}.key \
--out {{ host }}.csr \
--subj "/C=US/ST=MD/L=Pasadena/O=Red Hat, Inc./OU=NAPS/CN={{ host }}.ansible.local"
-
-openssl ca -config /opt/X509CA/openssl.cfg -notext -out C.crt -infiles C.csr
-
-
-
-
 JUNIPER:
 https://www.juniper.net/documentation/us/en/software/junos/vpn-ipsec/topics/topic-map/security-configuring-ca-and-local-certificates.html
 https://www.blackhole-networks.com/CertVPN/pki_setup.html
@@ -72,6 +52,12 @@ ec2-user@rtr3# exit
 Exiting configuration mode
 
 
+GET CERT FROM CA SERVER HERE
+ec2-user@rtr1> scp juniper@ec2-3-23-237-32.us-east-2.compute.amazonaws.com:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.crt            
+juniper@ec2-3-23-237-32.us-east-2.compute.amazonaws.com's password: 
+cacert.pem                                                                                                                                             100% 1074     1.1MB/s   00:00    
+
+
 ec2-user@rtr3> request security pki ca-certificate load ca-profile CACERT filename /var/tmp/cacert.pem           
 Fingerprint:
   bf:90:b0:2a:6e:a6:7c:67:c6:f8:2c:e1:42:30:d6:78:3e:d5:aa:3f (sha1)
@@ -81,8 +67,22 @@ Do you want to load this CA certificate ? [yes,no] (no) yes
 
 CA certificate for profile CACERT loaded successfully
 
+
+CHECK THE CA CERTIFICATE:
 ec2-user@rtr3> request security pki ca-certificate verify ca-profile CACERT 
 CA certificate CACERT verified successfully. revocation check is disabled
+
+
+ec2-user@rtr1> show security pki ca-certificate ca-profile CACERT 
+LSYS: root-logical-system
+  CA profile: CACERT
+Certificate identifier: CACERT
+  Issued to: Todd Ruch, Issued by: C = US, O = Red Hat, CN = Todd Ruch
+  Validity:
+    Not before: 06-29-2023 15:16 UTC
+    Not after: 06-28-2024 15:16 UTC
+  Public key algorithm: rsaEncryption(2048 bits)
+  Keypair Location: Keypair generated locally
 
 
 ec2-user@rtr3> request security pki generate-certificate-request certificate-id rtr3 domain-name rtr3.ansible.local subject "CN=rtr3.ansible.local,OU=NAPS,O=Red Hat,L=Pasadena,ST=MD,C=US"                
@@ -111,6 +111,56 @@ Fingerprint:
 a3:56:83:bb:ee:33:f4:80:5c:fc:b4:30:cd:34:35:65 (md5)
 93:04:f8:06:45:be:79:3e:e6:11:07:61:31:f0:a8:da:63:62:07:53:e8:60:94:22:8b:21:7c:fa:cd:45:a7:b8 (sha256)
 
+ALSO CAN ADD filename to the end of the request....
+ec2-user@rtr3> request security pki generate-certificate-request certificate-id rtr3
+               domain-name rtr3.ansible.local 
+               subject "CN=rtr3.ansible.local,OU=NAPS,O=Red Hat,L=Pasadena,ST=MD,C=US"
+               filename /var/tmp/rtr1.csr
+
+THEN YOU CAN GRAB THE CONTENTS AND WRITE TO FILE
+ec2-user@rtr1> file show /var/tmp/rtr1.csr 
+-----BEGIN CERTIFICATE REQUEST-----
+MIIC3zCCAccCAQAwajEbMBkGA1UEAxMScnRyMy5hbnNpYmxlLmxvY2FsMQ0wCwYD
+VQQLEwROQVBTMQ8wDQYDVQQKEwZSZWRIYXQxETAPBgNVBAcTCFBhc2FkZW5hMQsw
+CQYDVQQIEwJNRDELMAkGA1UEBhMCVVMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
+ggEKAoIBAQDWFfqZwA0vGCasnGByhUYQ5jVFH1whBz43bkNOrIusYKAbiQ/XeAcR
+TgPgv1GD3g8AypYSKp6UISIpufpwd2uDBRdB4bM3jZvHpOi2GdnXGXF8QktcexE4
+VCQGOhwQXqTDX0xOn7/9zkK+1DhJDgrls3BOetpinabGRUq9jf3m+RFhtOGsCy35
+166WfBxE1fR0gXX5JEXhUqGORYw7qN+YAZTYT/IDLr2fqAp/5/+FuX15YhLWgAgr
+kaUAaGCAg14SndsAMy9L5VS1Eq4TGtV0SROZMcVLh+aEcrUp/DgIJ32IdC8lUWj+
+8iGObMjT1EzPmf1FmFa4eKwvBt+ozbehAgMBAAGgMDAuBgkqhkiG9w0BCQ4xITAf
+MB0GA1UdEQQWMBSCEnJ0cjMuYW5zaWJsZS5sb2NhbDANBgkqhkiG9w0BAQUFAAOC
+AQEAoUiJ1BTTiwjEK6B+QcsyUuN9RvyYNddHKtUsKfcLMdKGlBi2PG7qJKm5lEst
+NXr7Z8e4ZfiWK4N0RlYgOpAb3nn4EqbRmdcNhYANcQUWAzt6ObOqjRmNa3RODpc3
+Fs3Hd4atqVgQ3lmEAWfWRuQlAO8dT3Qtkgfm7yRAj9gzAic9NmyFGzkM99xHZwSA
+HB6/eqx6pjspUkhxZZbCq5mcRyCDAf2YL01mrVlKqMz6DFxkSaWBTSq006CY3fYK
+PfkDRdTVPMjm6+a2lqdpFk+G9ywug8xLp+V+TqdYayjdruK6GD67zyZy3Qd8OVMR
+jsDVbKSZXFEza8wen4KEeKhC5g==
+-----END CERTIFICATE REQUEST-----
+
+ec2-user@rtr1> show security pki certificate-request detail 
+Certificate identifier: rtr3_local
+  Certificate version: 1
+  Issued to: CN = rtr3.ansible.local, OU = NAPS, O = Red Hat, L = Pasadena, ST = MD, C = US
+  Public key algorithm: rsaEncryption(2048 bits)
+    0�:\x01
+    :\x02�:\x01\x01:
+  Fingerprint:
+    f3:3b:68:39:0b:eb:28:8a:3e:18:b8:b3:1f:8b:ab:ae:41:35:ed:dd (sha1)
+    a2:c2:b1:54:46:63:28:85:83:1e:62:3a:ad:34:68:ae (md5)
+    0f:15:6b:93:c7:51:49:b0:6c:34:bb:0a:2f:3a:39:fb:b2:52:a1:1c:0b:56:51:06:8f:15:9f:b1:07:82:5c:7d (sha256)
+
+ec2-user@rtr1> clear security pki certificate-request certificate-id rtr3_local 
+
+ec2-user@rtr1> show security pki certificate-request detail                        
+Certificate identifier: rtr3_local
+  Certificate request not present
+
+
+
+SIGN THE CERTIFICATE SIGNING REQUEST HERE....
+
+
 ec2-user@rtr3> scp juniper@3.137.194.74:~/rtr3.crt /var/tmp/                                                                          
 juniper@3.137.194.74's password: 
 rtr3.crt                                                                                                100% 3807     1.8MB/s   00:00    
@@ -125,6 +175,11 @@ local certificate rtr3 verification success
 
 
 CERTIFICATE SHOW COMMANDS:
+
+[edit]
+ec2-user@rtr1# show security pki ca-profile ca-profile-ipsec 
+ca-identity ansible-local;
+
 ec2-user@rtr3> show security pki certificate-request                
 Certificate identifier: rtr3_local
   Certificate request not present
@@ -252,6 +307,9 @@ Sign the certificate? [y/n]:y
 1 out of 1 certificate requests certified, commit? [y/n]y
 Write out database with 1 new entries
 Data Base Updated
+
+
+ON JUNIPER HOST:
 [student@ansible-1 X509CA]$ scp rtr3.pem juniper@3.137.194.74:~/
 juniper@3.137.194.74's password: 
 rtr3.pem                                                                                                                  100% 1127   733.2KB/s   00:00    
@@ -275,3 +333,23 @@ Local certificate loaded successfully
 
 ec2-user@rtr3> request security pki local-certificate verify certificate-id rtr3 
 local certificate rtr3 verification success
+
+
+
+DELETE COMMANDS:
+[edit]
+ec2-user@rtr1# show
+...
+security {
+    pki {
+        ca-profile ca-profile-ipsec {
+            ca-identity ansible-local;
+        }
+    }
+}
+[edit]
+ec2-user@rtr1# delete security pki ca-profile ca-profile-ipsec 
+
+[edit]
+ec2-user@rtr1# commit 
+commit complete
