@@ -41,7 +41,7 @@
     #     - conf t
     #     - no crypto pki trustpoint {{ CACERT }}
 
-    - name: Create a CA Profile on Router (works)
+    - name: Create a CA Profile on Router (works - idempotent)
       tags:
         - ca_profile_create
         - never
@@ -68,15 +68,34 @@
             var: create_caprofile_output
             verbosity: 3
 
-    - name: Generate a certificate pair (works)
+    - name: Generate a certificate pair (works - not idempotent)
       tags:
         - key_generation
         - never
       block:
-        - name: Generate the RSA key (need to test)
-          junipernetworks.junos.junos_command:
-            commands: "request security pki generate-key-pair certificate-id {{ inventory_hostname }}_local size 2048 type rsa"
-          register: rsa_key_output
+
+        - name: Create the CA Profile
+          vars:
+            ansible_connection: netconf
+          junipernetworks.junos.junos_config:
+            lines: "request security pki generate-key-pair certificate-id {{ inventory_hostname }}_local size 2048 type rsa"
+            update: merge
+            confirm_commit: true
+          register: create_caprofile_output
+
+        ###  DO THIS NEXT ###
+        ###  DO THIS NEXT ###
+        ###  DO THIS NEXT ###
+        ###  DO THIS NEXT ###
+        ###  DO THIS NEXT ###
+        ###  DO THIS NEXT ###
+        ###  DO THIS NEXT ###
+        # SO I CAN DO A CLEAR HERE, OR FIGURE OUT HOW TO DO IT MORE IDEMPOTENTLY
+
+        # - name: Generate the RSA key (need to test)
+        #   junipernetworks.junos.junos_command:
+        #     commands: "request security pki generate-key-pair certificate-id {{ inventory_hostname }}_local size 2048 type rsa"
+        #   register: rsa_key_output
 
         - name: Debug output
           ansible.builtin.debug:
@@ -139,6 +158,27 @@
               - "yes"
           register: copy_output
 
+        ###  THIS CAN BE UNCOMMENTED AFTER I BUILD NEW EE with junos-eznc python pkg
+        # - name: Slurp cacert from CA Host
+        #   ansible.builtin.slurp:
+        #     src: "/tmp/{{ inventory_hostname }}.cer"
+        #   register: slurpedfile
+        #   delegate_to: ca-host
+
+        # - name: Copy the host cert to EE
+        #   ansible.builtin.copy:
+        #     content: "{{ (slurpedfile['content'] | b64decode) }}"
+        #     #src: "{{ (slurpedfile['content'] | b64decode).splitlines() }}"
+        #     dest: "/tmp/{{ inventory_hostname }}"
+
+        # - name: upload local file to tmp directory on remote device
+        #   vars:
+        #     ansible_connection: netconf
+        #   junipernetworks.junos.junos_scp:
+        #     src: "/tmp/{{ inventory_hostname }}.cer"
+        #     dest: /var/tmp/{{ inventory_hostname }}.test"
+        ###
+
         - name: copy cert to {{ inventory_hostname }}
           ansible.netcommon.cli_command:
             command: "scp juniper@{{ ca_host }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
@@ -147,7 +187,7 @@
             answer: 
               - "{{ ca_pass }}"
           register: copy_output
-
+                
         - name: Add the CA Certificate to the CA Profile
           ansible.netcommon.cli_command:
             command: "request security pki ca-certificate load ca-profile CACERT filename /var/tmp/cacert.pem"
@@ -179,9 +219,29 @@
             # answer: "yes"
           register: copy_output
 
+
+    - name: Get running configuration and state data
+      tags:
+        - getconf
+        - never
+      vars:
+        ansible_connection: netconf
+      block:
+        - name: Get stuff
+          ansible.netcommon.netconf_get:
+            display: xml
+            filter: <configuration><security><pki><ca-profile><name>CACERT</name></ca-profile></pki></security></configuration>
+          register: conf
+
+        - name: Debug output
+          ansible.builtin.debug:
+            msg: "{{ conf.stdout_lines }}"
+            verbosity: 3
+
     - name: Set Client Name for Follow-on Templates
       tags:
-        - always
+        - generate_cert
+        - never
       ansible.builtin.set_stats:
         data:
           client: "{{ inventory_hostname }}"
