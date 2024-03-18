@@ -6,7 +6,7 @@
   vars:
     domain_name: ansible.local
     ca_host: ec2-3-23-237-32.us-east-2.compute.amazonaws.com
-
+    trustpoint: CACERT
   tasks:
     - name: Backup Config
       tags:
@@ -46,13 +46,6 @@
         - ca_profile_create
         - never
       block:
-        # - name: Create the CA Profile (haven't tested this yet)
-        #   ansible.netcommon.cli_config:
-        #     config: "set security pki ca-profile CACERT ca-identity CAcert revocation-check disable"
-        #     # set security pki ca-profile ca-profile-ipsec ca-identity CACERT 
-        #     commit: true
-        #   register: create_caprofile_output
-
         - name: Create the CA Profile
           vars:
             ansible_connection: netconf
@@ -68,39 +61,58 @@
             var: create_caprofile_output
             verbosity: 3
 
-    - name: Generate a certificate pair (works - not idempotent)
+
+    - name: Delete a CA Profile on Router
       tags:
-        - key_generation
+        - ca_profile_delete
         - never
       block:
-
-        - name: Create the CA Profile
+        - name: Delete the CA Profile
           vars:
             ansible_connection: netconf
           junipernetworks.junos.junos_config:
-            lines: "request security pki generate-key-pair certificate-id {{ inventory_hostname }}_local size 2048 type rsa"
+            lines: "delete security pki ca-profile CACERT "
             update: merge
             confirm_commit: true
           register: create_caprofile_output
 
-        ###  DO THIS NEXT ###
-        ###  DO THIS NEXT ###
-        ###  DO THIS NEXT ###
-        ###  DO THIS NEXT ###
-        ###  DO THIS NEXT ###
-        ###  DO THIS NEXT ###
-        ###  DO THIS NEXT ###
-        # SO I CAN DO A CLEAR HERE, OR FIGURE OUT HOW TO DO IT MORE IDEMPOTENTLY
-
-        # - name: Generate the RSA key (need to test)
-        #   junipernetworks.junos.junos_command:
-        #     commands: "request security pki generate-key-pair certificate-id {{ inventory_hostname }}_local size 2048 type rsa"
-        #   register: rsa_key_output
-
         - name: Debug output
           ansible.builtin.debug:
-            var: rsa_key_output
+            var: create_caprofile_output
             verbosity: 3
+
+
+    - name: Generate a certificate pair (works - not idempotent)
+      tags:
+        - rsakeypair_clear
+        - never
+      block:
+        - name: Create the Host Keypair (RSA)
+          vars:
+            ansible_connection: netconf
+          junipernetworks.junos.junos_command:
+            commands: "clear security pki key-pair certificate-id {{ inventory_hostname }}_local"
+          register: rsa_key_output
+    
+
+    - name: Generate a certificate pair (works - not idempotent)
+      tags:
+        - rsakeypair_generation
+        - never
+      block:
+        - name: Create the Host Keypair (RSA)
+          vars:
+            ansible_connection: netconf
+          junipernetworks.junos.junos_command:
+            commands: "request security pki generate-key-pair certificate-id {{ inventory_hostname }}_local size 2048 type rsa"
+          register: rsa_key_output
+
+        - name: fail the play if the previous command did not succeed
+          ansible.builtin.fail:
+            msg: "{{ rsa_key_output.stdout }}"
+          when:
+            - rsa_key_output.failed == true
+
 
     - name: Generate CSR on Switch (works)
       tags:
@@ -136,7 +148,7 @@
         - name: Write CSR to file
           ansible.builtin.copy:
             content: "{{ csr.stdout }}"
-            dest: "/tmp/{{ inventory_hostname }}.csr"
+            dest: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.csr"
             owner: juniper
             group: juniper
             mode: '0644'
@@ -146,7 +158,7 @@
 
     - name: Add the CA Cert to the CA Profile (check that this works on new host)
       tags:
-        - ca_cert_ca_profile
+        - import_ca_certificate
         - never
       block:
         - name: copy cert to {{ inventory_hostname }}
@@ -202,7 +214,7 @@
       block:
         - name: copy host cert to {{ inventory_hostname }}
           ansible.netcommon.cli_command:
-            command: "scp juniper@{{ ca_host }}:/tmp/{{ inventory_hostname }}.cer /var/tmp/{{ inventory_hostname }}.cer"
+            command: "scp juniper@{{ ca_host }}:/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
             prompt: "password"
             answer: "{{ ca_pass }}"
           register: copy_output
@@ -214,11 +226,19 @@
 
         - name: Add the Host Certificate to the CA Profile
           ansible.netcommon.cli_command:
-            command: "request security pki local-certificate load certificate-id {{ inventory_hostname }}_local filename /var/tmp/{{ inventory_hostname }}.cer"
+            command: "request security pki local-certificate load certificate-id {{ inventory_hostname }}_local filename /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
             # prompt: "certificate"
             # answer: "yes"
           register: copy_output
 
+    # - name: Test Junos
+    #   tags:
+    #     - test_generate_csr
+    #     - never
+    #   junipernetworks.junos.junos_command:
+    #     commands:
+    #       # - "request security pki generate-certificate-request certificate-id rtr3_local domain-name rtr3.ansible.local subject 'CN=rtr3.ansible.local,OU=NAPS,O=RedHat,L=Pasadena,ST=MD,C=US'" 
+    #       - "request security pki generate-certificate-request certificate-id rtr3_local domain-name rtr3.ansible.local subject CN=rtr3.ansible.local,OU=NAPS,O=RedHat,L=Pasadena,ST=MD,C=US"
 
     - name: Get running configuration and state data
       tags:

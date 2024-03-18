@@ -5,7 +5,7 @@
 
   vars:
     trustpoint: aaptest1
-
+    min_days: 30
   tasks:
     - name: Check for TrustPoint on Host
       tags:
@@ -20,7 +20,7 @@
         - name: Fail when hostname not in certificates
           ansible.builtin.fail:
             msg: The system may not be provisioned with a certificate
-          when: certificate_enddate.stdout is undefined
+          when: certificate_enddate.stdout == ""
 
     - name: Check Certificate Date on Host
       tags:
@@ -35,7 +35,7 @@
         - name: Fail when hostname not in certificates
           ansible.builtin.fail:
             msg: The system may not be provisioned with a certificate
-          when: certificate_enddate.stdout is undefined
+          when: certificate_enddate.stdout == ""
 
         - name: Set END_DATE Fact
           ansible.builtin.set_fact:
@@ -54,16 +54,13 @@
 
         - name: Debug Days left on certificate
           ansible.builtin.debug:
-          # 06-28-2024 15:16 UTC
-          # %Y-%m-%d %H:%M:%S
             msg: "{{ ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
-            # msg: "{{ ((( END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
 
         - name: Fail when certificate needs to be updated
           ansible.builtin.fail:
             msg: The certificate needs to be updated
           when:
-            - ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < 10
+            - ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < min_days
 
     - name: Check Certificate Date on Host
       tags:
@@ -79,7 +76,7 @@
           ansible.builtin.fail:
             msg: The system may not be provisioned with a certificate
           when: certificate_enddate.stdout is undefined
-          
+
         - name: Set END_DATE Fact
           ansible.builtin.set_fact:
             END_DATE: "{{ (certificate_enddate.stdout | from_yaml)['Not after'] }}"
@@ -97,17 +94,13 @@
 
         - name: Debug Days left on certificate
           ansible.builtin.debug:
-          # 06-28-2024 15:16 UTC
-          # %Y-%m-%d %H:%M:%S
             msg: "{{ ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
-            # msg: "{{ ((( END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
-          # REMOVED THE WHEN STATEMENT FROM CISCO PLAYBOOK
 
         - name: Fail when certificate needs to be updated
           ansible.builtin.fail:
             msg: The certificate needs to be updated
           when:
-            - ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < 10
+            - ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < min_days
 
 
       # ec2-user@rtr4> show security pki local-certificate certificate-id rtr4_local detail
