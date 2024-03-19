@@ -119,6 +119,8 @@
             mode: '0644'
             backup: true
           delegate_to: ca-host
+          ansible_user: "{{ CA_USERNAME }}"
+          ansible_password: "{{ CA_PASSWORD }}"
           become: true
 
     - name: Add the CA Cert to the Trustpoint

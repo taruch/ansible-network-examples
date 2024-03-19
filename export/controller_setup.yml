@@ -17,7 +17,7 @@
     CONTROLLER_VERIFY_SSL: false
 
   tasks:
-    - name: Import Credential Types
+    - name: Create ServiceNow Credential Type
       ansible.controller.credential_type:
           description: ''
           injectors:
@@ -47,6 +47,31 @@
               - password
           kind: cloud
           name: ServiceNow ITSM
+
+    - name: Create CA Host Credential Type
+      ansible.controller.credential_type:
+          description: 'CA Host Credential Type'
+          injectors:
+              env:
+                  CA_PASSWORD: "{% raw %}{{ password }}{% endraw %}"
+                  CA_USERNAME: "{% raw %}{{ username }}{% endraw %}"
+              extra_vars:
+                  CA_PASSWORD: "{% raw %}{{ password }}{% endraw %}"
+                  CA_USERNAME: "{% raw %}{{ username }}{% endraw %}"
+          inputs:
+              fields:
+              -   id: username
+                  label: Username
+                  type: string
+              -   id: password
+                  label: Password
+                  secret: true
+                  type: string
+              required:
+              - username
+              - password
+          kind: cloud
+          name: CA Credential Type
 
 
     - name: Create ServiceNow Credential
