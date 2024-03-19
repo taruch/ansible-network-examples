@@ -149,10 +149,13 @@
         - never
       block:
         - name: Slurp hosts file
+          vars:
+            ansible_user: "{{ CA_USERNAME }}"
+            ansible_password: "{{ CA_PASSWORD }}"
           ansible.builtin.slurp:
             src: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
           register: slurpfile
-          delegate_to: ansible-1
+          delegate_to: ca-cert
 
         - name: Copy the host cert to EE
           ansible.builtin.set_fact:
