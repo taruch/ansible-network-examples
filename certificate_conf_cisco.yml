@@ -155,7 +155,7 @@
           ansible.builtin.slurp:
             src: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
           register: slurpfile
-          delegate_to: ca-cert
+          delegate_to: ca-host
 
         - name: Copy the host cert to EE
           ansible.builtin.set_fact:
