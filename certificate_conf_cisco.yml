@@ -5,7 +5,6 @@
 
   vars:
     domain_name: ansible.local
-    # ca_cert: "{{ lookup('file', './certificates/cacert.cer').splitlines() }}"
 
   tasks:
     - name: Backup Config
@@ -128,6 +127,8 @@
         - never
       block:
         - name: Create the template variable
+          vars:
+            ca_cert: "{{ lookup('file', './certificates/cacert.cer').splitlines() }}"
           ansible.builtin.set_fact:
             cacert_var: "{{ lookup('ansible.builtin.template', './templates/rtr_authenticate_CA.j2') | split('\n') }}"
 
