@@ -3,10 +3,13 @@
   hosts: localhost
   connection: local
   gather_facts: false
+  vars_files:
+    - job_templates.yml
+    - credential_types.yml
   environment:
-    CONTROLLER_HOST: "https://student1.2czt6.example.opentlc.com"
+    CONTROLLER_HOST: "https://student1.q2fjc.example.opentlc.com"
     CONTROLLER_USERNAME: admin
-    CONTROLLER_PASSWORD: 'zwlkak01'
+    CONTROLLER_PASSWORD: 'yp0fib7l'
     # CONTROLLER_OAUTH_TOKEN:
     # CONTROLLER_HOST: "{{ controller }}"
     # CONTROLLER_PASSWORD: "{{ pass }}"
@@ -14,29 +17,733 @@
     CONTROLLER_VERIFY_SSL: false
 
   tasks:
-
-    - name: Import Execution Environments
-      ansible.controller.import:
-        assets: "{{ lookup('file', './execution_environments.yml') | from_yaml() }}"
-
     - name: Import Credential Types
-      ansible.controller.import:
-        assets: "{{ lookup('file', './credential_types.yml') | from_yaml() }}"
+      ansible.controller.credential_type:
+          description: ''
+          injectors:
+              env:
+                  SN_HOST: "{% raw %}{{ host }}{% endraw %}"
+                  SN_PASSWORD: "{% raw %}{{ password }}{% endraw %}"
+                  SN_USERNAME: "{% raw %}{{ username }}{% endraw %}"
+              extra_vars:
+                  SN_HOST: "{% raw %}{{ host }}{% endraw %}"
+                  SN_PASSWORD: "{% raw %}{{ password }}{% endraw %}"
+                  SN_USERNAME: "{% raw %}{{ username }}{% endraw %}"
+          inputs:
+              fields:
+              -   id: host
+                  label: Host
+                  type: string
+              -   id: username
+                  label: Username
+                  type: string
+              -   id: password
+                  label: Password
+                  secret: true
+                  type: string
+              required:
+              - instance
+              - username
+              - password
+          kind: cloud
+          name: ServiceNow ITSM
+    # - name: Import Credential Types
+    #   ansible.controller.import:
+    #     assets: "{{ lookup('file', './credential_types.yml') | from_yaml() }}"
 
     - name: Import Credentials
-      ansible.controller.import:
-        assets: "{{ lookup('file', './credentials.yml') | from_yaml() }}"
+      ansible.controller.credential:
+          name: ServiceNow ITSM
+          credential_type: ServiceNow ITSM
+          description: ''
+          inputs:
+              host: https://ven05430.service-now.com/
+              password: ''
+              username: admin
+          organization: Default
 
-    - name: Import Projects
-      ansible.controller.import:
-        assets: "{{ lookup('file', './projects.yml') | from_yaml() }}"
+    - name: Import Credentials
+      ansible.controller.credential:
+          name: Gitlab Ansible_EE Token
+          credential_type: Container Registry
+          description: ''
+          inputs:
+              host: registry.gitlab.com
+              username: truch1
+              verify_ssl: true
+          organization: Default
 
-    - name: Import Job Templates
-      ansible.controller.import:
-        assets: "{{ lookup('file', './job_templates.yml') | from_yaml() }}"
+    # - name: Import Credentials
+    #   ansible.controller.import:
+    #     assets: "{{ lookup('file', './credentials.yml') | from_yaml() }}"
 
-    - name: Import Workflow Job Templates
-      ansible.controller.import:
-        assets: "{{ lookup('file', './workflow_cert_mgmt.yml') | from_yaml() }}"
+    - name: Import Execution Environments
+      ansible.controller.execution_environment:
+          credential: Gitlab Ansible_EE Token
+          description: ''
+          image: registry.gitlab.com/redhatautomation/ansible_ee/ruch-network-ee:latest
+          name: ruch-network-ee
+          pull: missing
+
+    # - name: Import Execution Environments
+    #   ansible.controller.import:
+    #     assets: "{{ lookup('file', './execution_environments.yml') | from_yaml() }}"
+
+    - name: Import ServiceNow Examples Project
+      ansible.controller.project:
+          allow_override: false
+          credential: null
+          default_environment: null
+          description: ''
+          name: ServiceNow Examples
+          organization: Default
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          scm_branch: ''
+          scm_clean: false
+          scm_delete_on_update: false
+          scm_refspec: ''
+          scm_track_submodules: false
+          scm_type: git
+          scm_update_cache_timeout: 0
+          scm_update_on_launch: false
+          scm_url: https://github.com/taruch/symmetrical-octo-umbrella.git
+          signature_validation_credential: null
+          timeout: 0
+
+    - name: Create 'CA / Generate Certificate' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: ''
+          diff_mode: false
+          execution_environment: null
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: ''
+          job_type: run
+          limit: ''
+          name: CA / Generate Certificate
+          playbook: generate_certificate.yml
+          prevent_instance_group_fallback: false
+          project: Ansible Network Examples
+          credentials:
+          # - CA Passphrase
+          - Workshop Credential
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: false
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
+
+    - name: Create 'Cisco /  Check Certificate Date' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: ''
+          diff_mode: false
+          execution_environment: ruch-network-ee
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: check_certificate_date
+          job_type: run
+          limit: ''
+          name: Cisco /  Check Certificate Date
+          playbook: check_certificates_cisco.yml
+          prevent_instance_group_fallback: false
+          project: Ansible Network Examples
+          credentials:
+          -  Workshop Credential
+          labels: []
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          survey_spec: {}
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: false
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
+
+    - name: Create 'Cisco / Check for Certificate' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: Check for Trustpoint on Host with Certificate
+          diff_mode: false
+          execution_environment: ruch-network-ee
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: check_for_certificate
+          job_type: run
+          limit: ''
+          name: Cisco / Check for Certificate
+          playbook: check_certificates_cisco.yml
+          prevent_instance_group_fallback: false
+          project: Ansible Network Examples
+          credentials:
+          - Workshop Credential
+          labels: []
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          survey_spec: {}
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: false
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
+
+    - name: Create 'Cisco / Host Base Configuration' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: ''
+          diff_mode: false
+          execution_environment: ruch-network-ee
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: hostinfo
+          job_type: run
+          limit: ''
+          name: Cisco / Host Base Configuration
+          playbook: certificate_conf_cisco.yml
+          prevent_instance_group_fallback: false
+          project: Ansible Network Examples
+          credentials:
+          - Workshop Credential
+          labels: []
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          survey_spec: {}
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: false
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
+
+    - name: Create ' Cisco / Trustpoint Authenticate CA' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: ''
+          diff_mode: false
+          execution_environment: ruch-network-ee
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: ca_cert_trustpoint
+          job_type: run
+          limit: ''
+          name: Cisco / Trustpoint Authenticate CA
+          playbook: certificate_conf_cisco.yml
+          prevent_instance_group_fallback: false
+          project: Ansible Network Examples
+          credentials:
+          -   Workshop Credential
+          labels: []
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          survey_spec:
+              description: ''
+              name: ''
+              spec:
+              -   choices: ''
+                  default: ''
+                  max: 24
+                  min: 1
+                  new_question: true
+                  question_description: ''
+                  question_name: What is the name of the Trustpoint?
+                  required: true
+                  type: text
+                  variable: trustpoint
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: false
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
+
+    - name: Create 'Cisco / Trustpoint Create' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: ''
+          diff_mode: false
+          execution_environment: ruch-network-ee
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: key_generation,trustpoint_create,csr_create
+          job_type: run
+          limit: ''
+          name: Cisco / Trustpoint Create
+          playbook: certificate_conf_cisco.yml
+          prevent_instance_group_fallback: false
+          project: Ansible Network Examples
+          credentials:
+          - Workshop Credential
+          labels: []
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          survey_spec:
+              description: ''
+              name: ''
+              spec:
+              -   choices: ''
+                  default: ''
+                  max: 24
+                  min: 1
+                  new_question: true
+                  question_description: ''
+                  question_name: What is the name of the Trustpoint?
+                  required: true
+                  type: text
+                  variable: trustpoint
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: false
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
+
+    - name: Create 'Cisco / Trustpoint Create w/Survey' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: ''
+          diff_mode: false
+          execution_environment: ruch-network-ee
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: key_generation,trustpoint_create
+          job_type: run
+          limit: ''
+          name: Cisco / Trustpoint Create w/Survey
+          playbook: certificate_conf_cisco.yml
+          prevent_instance_group_fallback: false
+          project: Ansible Network Examples
+          credentials:
+          - Workshop Credential
+          labels: []
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          survey_spec:
+              description: ''
+              name: ''
+              spec:
+              -   choices: ''
+                  default: ''
+                  max: 24
+                  min: 1
+                  new_question: true
+                  question_description: ''
+                  question_name: What is the name of the Trustpoint?
+                  required: true
+                  type: text
+                  variable: trustpoint
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: true
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
+
+    - name: Create 'Cisco / Trustpoint Delete' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: ''
+          diff_mode: false
+          execution_environment: ruch-network-ee
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: trustpoint_delete
+          job_type: run
+          limit: ''
+          name: Cisco / Trustpoint Delete
+          playbook: certificate_conf_cisco.yml
+          prevent_instance_group_fallback: false
+          project: Ansible Network Examples
+          credentials:
+          - Workshop Credential
+          labels: []
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          survey_spec:
+              description: ''
+              name: ''
+              spec:
+              -   choices: ''
+                  default: ''
+                  max: 24
+                  min: 1
+                  new_question: true
+                  question_description: ''
+                  question_name: What is the name of the Trustpoint?
+                  required: true
+                  type: text
+                  variable: trustpoint
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: true
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
+
+    - name: Create 'Cisco / Trustpoint Import Host Certificate' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: ''
+          diff_mode: false
+          execution_environment: ruch-network-ee
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: import_host_certificate
+          job_type: run
+          limit: ''
+          name: Cisco / Trustpoint Import Host Certificate
+          playbook: certificate_conf_cisco.yml
+          prevent_instance_group_fallback: false
+          project: Ansible Network Examples
+          credentials:
+          - Workshop Credential
+          labels: []
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          survey_spec:
+              description: ''
+              name: ''
+              spec:
+              -   choices: ''
+                  default: ''
+                  max: 24
+                  min: 1
+                  new_question: true
+                  question_description: ''
+                  question_name: What is the name of the Trustpoint?
+                  required: true
+                  type: text
+                  variable: trustpoint
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: false
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
+
+
+    - name: Create 'ServiceNow / Change Create' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: ''
+          diff_mode: false
+          execution_environment: ruch-network-ee
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: ''
+          job_type: run
+          limit: ''
+          name: ServiceNow / Change Create
+          playbook: itsm_change_create_cisco.yml
+          prevent_instance_group_fallback: false
+          project: ServiceNow Examples
+          credentials:
+          - ServiceNow ITSM
+          labels: []
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          survey_spec: {}
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: false
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
+
+    - name: Create 'ServiceNow / Change Update' job template
+      ansible.controller.job_template:
+          allow_simultaneous: false
+          ask_credential_on_launch: false
+          ask_diff_mode_on_launch: false
+          ask_execution_environment_on_launch: false
+          ask_forks_on_launch: false
+          ask_instance_groups_on_launch: false
+          ask_inventory_on_launch: false
+          ask_job_slice_count_on_launch: false
+          ask_job_type_on_launch: false
+          ask_labels_on_launch: false
+          ask_limit_on_launch: false
+          ask_scm_branch_on_launch: false
+          ask_skip_tags_on_launch: false
+          ask_tags_on_launch: false
+          ask_timeout_on_launch: false
+          ask_variables_on_launch: false
+          ask_verbosity_on_launch: false
+          become_enabled: false
+          description: ''
+          diff_mode: false
+          execution_environment: ruch-network-ee
+          force_handlers: false
+          forks: 0
+          host_config_key: ''
+          inventory: Workshop Inventory
+          job_slice_count: 1
+          job_tags: ''
+          job_type: run
+          limit: ''
+          name: ServiceNow / Change Update
+          playbook: itsm_change_update.yml
+          prevent_instance_group_fallback: false
+          project: ServiceNow Examples
+          credentials:
+          - ServiceNow ITSM
+          labels: []
+          notification_templates_error: []
+          notification_templates_started: []
+          notification_templates_success: []
+          survey_spec: {}
+          scm_branch: ''
+          skip_tags: ''
+          start_at_task: ''
+          survey_enabled: false
+          timeout: 0
+          use_fact_cache: false
+          verbosity: 0
+          webhook_credential: null
+          webhook_service: ''
 
 ...
