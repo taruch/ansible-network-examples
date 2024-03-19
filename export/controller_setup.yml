@@ -7,9 +7,9 @@
     - job_templates.yml
     - credential_types.yml
   environment:
-    CONTROLLER_HOST: "https://student1.q2fjc.example.opentlc.com"
+    CONTROLLER_HOST: "CHANGEME"
     CONTROLLER_USERNAME: admin
-    CONTROLLER_PASSWORD: 'yp0fib7l'
+    CONTROLLER_PASSWORD: 'CHANGEME'
     # CONTROLLER_OAUTH_TOKEN:
     # CONTROLLER_HOST: "{{ controller }}"
     # CONTROLLER_PASSWORD: "{{ pass }}"
