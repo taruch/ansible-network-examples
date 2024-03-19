@@ -17,29 +17,18 @@
         backup_format: json
         dir_path: /tmp/
 
-    # - name: Configure hostname and domain name
-    #   tags:
-    #     - hostinfo
-    #     - always
-    #   junipernetworks.junos.junos_system:
-    #     hostname: "{{ inventory_hostname }}"
-    #     domain_name: "{{ domain_name }}"
-    #     name_servers:
-    #       - 8.8.8.8
-    #     domain_search:
-    #       - "{{ domain_name }}"
+    - name: Configure hostname and domain name
+      tags:
+        - hostinfo
+        - always
+      junipernetworks.junos.junos_system:
+        hostname: "{{ inventory_hostname }}"
+        domain_name: "{{ domain_name }}"
+        name_servers:
+          - 8.8.8.8
+        domain_search:
+          - "{{ domain_name }}"
 
-    # - name: Delete the Trustpoint on Switch
-    #   tags:
-    #     - trustpoint_delete
-    #     - never
-    #   ansible.netcommon.cli_command:
-    #     command: "{{ item }}"
-    #     prompt: "this?"
-    #     answer: "yes"
-    #   loop:
-    #     - conf t
-    #     - no crypto pki trustpoint {{ CACERT }}
 
     - name: Create a CA Profile on Router (works - idempotent)
       tags:
@@ -51,7 +40,6 @@
             ansible_connection: netconf
           junipernetworks.junos.junos_config:
             lines: "set security pki ca-profile CACERT ca-identity CAcert revocation-check disable"
-            # set security pki ca-profile ca-profile-ipsec ca-identity CACERT 
             update: merge
             confirm_commit: true
           register: create_caprofile_output
@@ -82,7 +70,7 @@
             verbosity: 3
 
 
-    - name: Generate a certificate pair (works - not idempotent)
+    - name: Clear a certificate pair (works)
       tags:
         - rsakeypair_clear
         - never
