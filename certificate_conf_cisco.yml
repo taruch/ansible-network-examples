@@ -111,6 +111,9 @@
             verbosity: 3
 
         - name: Write CSR to file
+          vars:
+            ansible_user: "{{ CA_USERNAME }}"
+            ansible_password: "{{ CA_PASSWORD }}"
           ansible.builtin.copy:
             content: "{{ csr }}"
             dest: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.csr"
@@ -119,7 +122,6 @@
             mode: '0644'
             backup: true
           delegate_to: ca-host
-          become: true
 
     - name: Add the CA Cert to the Trustpoint
       tags:
