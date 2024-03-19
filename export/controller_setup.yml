@@ -9,7 +9,7 @@
   environment:
     CONTROLLER_HOST: "https://student1.q2fjc.example.opentlc.com"
     CONTROLLER_USERNAME: admin
-    CONTROLLER_PASSWORD: ''
+    CONTROLLER_PASSWORD: 'yp0fib7l'
     # CONTROLLER_OAUTH_TOKEN:
     # CONTROLLER_HOST: "{{ controller }}"
     # CONTROLLER_PASSWORD: "{{ pass }}"
@@ -47,11 +47,9 @@
               - password
           kind: cloud
           name: ServiceNow ITSM
-    # - name: Import Credential Types
-    #   ansible.controller.import:
-    #     assets: "{{ lookup('file', './credential_types.yml') | from_yaml() }}"
 
-    - name: Import Credentials
+
+    - name: Create ServiceNow Credential
       ansible.controller.credential:
           name: ServiceNow ITSM
           credential_type: ServiceNow ITSM
@@ -62,7 +60,7 @@
               username: admin
           organization: Default
 
-    - name: Import Credentials
+    - name: Create Gitlab Registry Credential
       ansible.controller.credential:
           name: Gitlab Ansible_EE Token
           credential_type: Container Registry
@@ -73,9 +71,15 @@
               verify_ssl: true
           organization: Default
 
-    # - name: Import Credentials
-    #   ansible.controller.import:
-    #     assets: "{{ lookup('file', './credentials.yml') | from_yaml() }}"
+    - name: Create CA Host Credential
+      ansible.controller.credential:
+          name: CA Host Credential
+          credential_type: Machine
+          description: ''
+          inputs:
+              username: juniper
+              password: CHANGE_ME
+          organization: Default
 
     - name: Import Execution Environments
       ansible.controller.execution_environment:
@@ -85,11 +89,16 @@
           name: ruch-network-ee
           pull: missing
 
-    # - name: Import Execution Environments
-    #   ansible.controller.import:
-    #     assets: "{{ lookup('file', './execution_environments.yml') | from_yaml() }}"
+    - name: Add Certificate Authority Host
+      ansible.controller.host:
+        name: ca-host
+        description: "Certificate Authority"
+        inventory: "Workshop Inventory"
+        state: present
+        variables:
+          ansible_host: CHANGE_ME
 
-    - name: Import ServiceNow Examples Project
+    - name: Create ServiceNow Examples Project
       ansible.controller.project:
           allow_override: false
           credential: null
@@ -149,7 +158,7 @@
           project: Ansible Network Examples
           credentials:
           # - CA Passphrase
-          - Workshop Credential
+          - CA Host Credential 
           scm_branch: ''
           skip_tags: ''
           start_at_task: ''
@@ -191,7 +200,7 @@
           job_tags: check_certificate_date
           job_type: run
           limit: ''
-          name: Cisco /  Check Certificate Date
+          name: Cisco / Check Certificate Date
           playbook: check_certificates_cisco.yml
           prevent_instance_group_fallback: false
           project: Ansible Network Examples
@@ -316,7 +325,7 @@
           webhook_credential: null
           webhook_service: ''
 
-    - name: Create ' Cisco / Trustpoint Authenticate CA' job template
+    - name: Create 'Cisco / Trustpoint Authenticate CA' job template
       ansible.controller.job_template:
           allow_simultaneous: false
           ask_credential_on_launch: false
@@ -745,5 +754,155 @@
           verbosity: 0
           webhook_credential: null
           webhook_service: ''
+
+    - name: Setup workflow Cert Management Workflow
+      ansible.controller.workflow_job_template:
+          name: 'Cisco / Certificate Management'
+          description: ''
+          inventory: Workshop Inventory
+          organization: Default
+          survey_spec:
+              description: ''
+              name: ''
+              spec:
+              -   choices: ''
+                  default: ''
+                  max: 24
+                  min: 1
+                  new_question: true
+                  question_description: ''
+                  question_name: What is the name of the Trustpoint?
+                  required: true
+                  type: text
+                  variable: trustpoint
+              -   choices: ''
+                  default: ''
+                  max: 4
+                  min: 1
+                  new_question: true
+                  question_description: ''
+                  question_name: Minimum Days Before Certificate Renewal?
+                  required: true
+                  type: text
+                  variable: days
+          workflow_nodes:
+          -   identifier: Check for Trustpoint
+              unified_job_template:
+                  name: 'Cisco / Check for Certificate'
+                  organization: 
+                      name: Default
+                  type: job_template
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes:
+                  -   identifier: Create Trustpoint
+                  success_nodes:
+                  -   identifier: Check Certificate Date
+
+          -   identifier: Create Trustpoint
+              unified_job_template:
+                  name: 'Cisco / Trustpoint Create'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Create Change Request
+
+          -   identifier: Check Certificate Date
+              unified_job_template:
+                  name: 'Cisco / Check Certificate Date'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes:
+                  -   identifier: Create Change Request
+                  success_nodes: []
+
+          -   identifier: Create Change Request
+              unified_job_template:
+                  name: 'ServiceNow / Change Create'
+                  organization: 
+                      name: Default
+                  type: job_template
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Generate Certificate
+
+          -   identifier: Generate Certificate
+              unified_job_template:
+                  name: 'CA / Generate Certificate'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Trustpoint Authenticate CA
+
+          -   identifier: Trustpoint Authenticate CA
+              unified_job_template:
+                  name: 'Cisco / Trustpoint Authenticate CA'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Import Host Certificate
+
+          -   identifier: Import Host Certificate
+              unified_job_template:
+                  name: 'Cisco / Trustpoint Import Host Certificate'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Validate Certificate Date
+          
+          -   identifier: Validate Certificate Date
+              unified_job_template:
+                  name: 'Cisco / Check Certificate Date'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Update Change Req
+
+          -   identifier: Update Change Req
+              unified_job_template:
+                  name: 'ServiceNow / Change Update'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes: []
+
+          survey_enabled: true
 
 ...
