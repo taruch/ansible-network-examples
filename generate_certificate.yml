@@ -12,18 +12,12 @@
 
   tasks:
     - name: Delete files
-      vars:
-        ansible_user: "{{ CA_USERNAME }}"
-        ansible_password: "{{ CA_USERNAME }}"
       ansible.builtin.file:
         path: "/tmp/{{ client }}_{{ trustpoint }}.cer"
         state: absent
       become: true
 
     - name: Generate Demo Certificate with OpenSSL from CSR
-      vars:
-        ansible_user: "{{ CA_USERNAME }}"
-        ansible_password: "{{ CA_USERNAME }}"
       ansible.builtin.expect:
         command: >
           openssl ca -config /opt/X509CA/openssl.cfg 
