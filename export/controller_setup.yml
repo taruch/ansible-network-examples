@@ -3,9 +3,6 @@
   hosts: localhost
   connection: local
   gather_facts: false
-  vars_files:
-    - job_templates.yml
-    - credential_types.yml
   environment:
     CONTROLLER_HOST: ""
     CONTROLLER_USERNAME: admin
