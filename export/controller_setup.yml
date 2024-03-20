@@ -4,9 +4,9 @@
   connection: local
   gather_facts: false
   environment:
-    CONTROLLER_HOST: ""
-    CONTROLLER_USERNAME: admin
-    CONTROLLER_PASSWORD: ''
+    CONTROLLER_HOST: "{{ host }}"
+    CONTROLLER_USERNAME: "{{ username }}"
+    CONTROLLER_PASSWORD: "{{ password }}"
     # CONTROLLER_OAUTH_TOKEN:
     # CONTROLLER_HOST: "{{ controller }}"
     # CONTROLLER_PASSWORD: "{{ pass }}"
