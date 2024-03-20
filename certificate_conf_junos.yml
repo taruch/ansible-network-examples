@@ -155,7 +155,7 @@
         - import_ca_certificate
         - never
       block:
-        - name: copy cert to {{ inventory_hostname }}
+        - name: Clear CA Certificate
           ansible.netcommon.cli_command:
             command: "clear security pki ca-certificate ca-profile CACERT"
             prompt: 
@@ -185,13 +185,13 @@
         #     dest: /var/tmp/{{ inventory_hostname }}.test"
         ###
 
-        - name: copy cert to {{ inventory_hostname }}
+        - name: Copy the CA cert to Router
           ansible.netcommon.cli_command:
             command: "scp juniper@{{ ca_host }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
             prompt: 
               - "password"
             answer: 
-              - "{{ ca_pass }}"
+              - "{{ CA_PASSWORD }}"
           register: copy_output
                 
         - name: Add the CA Certificate to the CA Profile
