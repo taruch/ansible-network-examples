@@ -2,7 +2,6 @@
 - name: Check Certificates on JunOS device
   hosts: juniper
   gather_facts: false
-
   vars:
     trustpoint: aaptest1
     min_days: 30
@@ -102,6 +101,12 @@
           when:
             - ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < min_days
 
+    - name: Set Client Name for Follow-on Templates
+      tags:
+        - always
+      ansible.builtin.set_stats:
+        data:
+          client: "{{ inventory_hostname }}"
 
       # ec2-user@rtr4> show security pki local-certificate certificate-id rtr4_local detail
       # LSYS: root-logical-system

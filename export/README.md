@@ -22,3 +22,12 @@ CA / Generate Certificate template (issue)
 
 Add the CA Host Credential the Cisco / Trustpoint Import Host Certificate (issue)
 
+Juniper / Import CA Certificate to CA Profile
+Juniper / Import Host Certificate to CA Profile
+These both have the wrong playbook
+
+
+Add the CA Cert to the CA Profile
+Fix this - need to add the CA Host Credential to this playbook because it needs the CA_PASSWORD
+ALSO
+This is failing the first time you connect to a host because it asks if you are sure you want to connect...

@@ -252,12 +252,5 @@
             msg: "{{ conf.stdout_lines }}"
             verbosity: 3
 
-    - name: Set Client Name for Follow-on Templates
-      tags:
-        - always
-      ansible.builtin.set_stats:
-        data:
-          client: "{{ inventory_hostname }}"
-
 
 ...
