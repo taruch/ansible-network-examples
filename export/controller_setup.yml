@@ -100,7 +100,6 @@
       ansible.controller.credential:
           name: CA Host Credential
           credential_type: CA Credential Type
-          enabled: true
           description: ''
           inputs:
               username: juniper
@@ -121,6 +120,7 @@
         description: "Certificate Authority"
         inventory: "Workshop Inventory"
         state: present
+        enabled: true
         variables:
           ansible_host: CHANGE_ME
 
