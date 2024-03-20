@@ -2,11 +2,12 @@
 - name: Configure Certificate on Juniper JunOS device
   hosts: juniper
   gather_facts: false
-  
   vars:
     domain_name: ansible.local
     ca_host: ec2-3-23-237-32.us-east-2.compute.amazonaws.com
     trustpoint: CACERT
+    ansible_connection: ansible.netcommon.network_cli
+  
   tasks:
     - name: Backup Config
       tags:
@@ -20,7 +21,9 @@
     - name: Configure hostname and domain name
       tags:
         - hostinfo
-        - always
+        - never
+      vars:
+        ansible_connection: netconf
       junipernetworks.junos.junos_system:
         hostname: "{{ inventory_hostname }}"
         domain_name: "{{ domain_name }}"
@@ -134,6 +137,9 @@
             verbosity: 3
 
         - name: Write CSR to file
+          vars:
+            ansible_user: "{{ CA_USERNAME }}"
+            ansible_password: "{{ CA_PASSWORD }}"
           ansible.builtin.copy:
             content: "{{ csr.stdout }}"
             dest: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.csr"

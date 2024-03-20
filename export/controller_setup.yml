@@ -7,9 +7,9 @@
     - job_templates.yml
     - credential_types.yml
   environment:
-    CONTROLLER_HOST: ""
+    CONTROLLER_HOST: "https://student1.q2fjc.example.opentlc.com"
     CONTROLLER_USERNAME: admin
-    CONTROLLER_PASSWORD: ''
+    CONTROLLER_PASSWORD: 'yp0fib7l'
     # CONTROLLER_OAUTH_TOKEN:
     # CONTROLLER_HOST: "{{ controller }}"
     # CONTROLLER_PASSWORD: "{{ pass }}"
@@ -100,6 +100,7 @@
       ansible.controller.credential:
           name: CA Host Credential
           credential_type: CA Credential Type
+          enabled: true
           description: ''
           inputs:
               username: juniper
@@ -602,11 +603,12 @@
           job_type: run
           limit: ''
           name: Juniper / CA Profile Create
-          playbook: check_certificate_junos.yml
+          playbook: certificate_conf_junos.yml
           prevent_instance_group_fallback: false
           project: Ansible Network Examples
           credentials:
           - Workshop Credential
+          - CA Host Credential
           labels: []
           notification_templates_error: []
           notification_templates_started: []
@@ -1035,7 +1037,7 @@
           job_tags: import_host_certificate
           job_type: run
           limit: ''
-          name: Cisco / Import Host Certificate to CA Profile
+          name: 'Juniper / Import Host Certificate to CA Profile'
           playbook: check_certificate_junos.yml
           prevent_instance_group_fallback: false
           project: Ansible Network Examples
@@ -1299,6 +1301,156 @@
           -   identifier: Validate Certificate Date
               unified_job_template:
                   name: 'Cisco / Check Certificate Date'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Update Change Req
+
+          -   identifier: Update Change Req
+              unified_job_template:
+                  name: 'ServiceNow / Change Update'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes: []
+          survey_enabled: true
+
+
+    - name: Setup workflow Cert Management Workflow
+      ansible.controller.workflow_job_template:
+          name: 'Juniper / Certificate Management'
+          description: ''
+          inventory: Workshop Inventory
+          organization: Default
+          survey_spec:
+              description: ''
+              name: ''
+              spec:
+              -   choices: ''
+                  default: ''
+                  max: 24
+                  min: 1
+                  new_question: true
+                  question_description: ''
+                  question_name: What is the name of the Trustpoint?
+                  required: true
+                  type: text
+                  variable: trustpoint
+              -   choices: ''
+                  default: ''
+                  max: 4
+                  min: 1
+                  new_question: true
+                  question_description: ''
+                  question_name: Minimum Days Before Certificate Renewal?
+                  required: true
+                  type: text
+                  variable: days
+          workflow_nodes:
+          -   identifier: Check for Trustpoint
+              unified_job_template:
+                  name: 'Juniper / Check for Certificate'
+                  organization: 
+                      name: Default
+                  type: job_template
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes:
+                  -   identifier: Create Trustpoint
+                  success_nodes:
+                  -   identifier: Check Certificate Date
+
+          -   identifier: Create Trustpoint
+              unified_job_template:
+                  name: 'Juniper / CA Profile Create'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Create Change Request
+
+          -   identifier: Check Certificate Date
+              unified_job_template:
+                  name: 'Juniper / Check Certificate Date'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes:
+                  -   identifier: Create Change Request
+                  success_nodes: []
+
+          -   identifier: Create Change Request
+              unified_job_template:
+                  name: 'ServiceNow / Change Create'
+                  organization: 
+                      name: Default
+                  type: job_template
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Generate Certificate
+
+          -   identifier: Generate Certificate
+              unified_job_template:
+                  name: 'CA / Generate Certificate'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Trustpoint Authenticate CA
+
+          -   identifier: Trustpoint Authenticate CA
+              unified_job_template:
+                  name: 'Juniper / Import CA Certificate to CA Profile'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Import Host Certificate
+
+          -   identifier: Import Host Certificate
+              unified_job_template:
+                  name: 'Juniper / Import Host Certificate to CA Profile'
+                  organization: 
+                      name: Default
+                  type: job_template 
+              related:
+                  always_nodes: []
+                  credentials: []
+                  failure_nodes: []
+                  success_nodes:
+                  -   identifier: Validate Certificate Date
+          
+          -   identifier: Validate Certificate Date
+              unified_job_template:
+                  name: 'Juniper / Check Certificate Date'
                   organization: 
                       name: Default
                   type: job_template 
