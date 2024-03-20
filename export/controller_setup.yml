@@ -545,6 +545,7 @@
           project: Ansible Network Examples
           credentials:
           - Workshop Credential
+          - CA Host Credential
           labels: []
           notification_templates_error: []
           notification_templates_started: []
@@ -910,7 +911,7 @@
           job_type: run
           limit: ''
           name: Juniper / Import CA Certificate to CA Profile
-          playbook: check_certificate_junos.yml
+          playbook: certificate_conf_junos.yml
           prevent_instance_group_fallback: false
           project: Ansible Network Examples
           credentials:
@@ -980,6 +981,7 @@
           project: Ansible Network Examples
           credentials:
           - Workshop Credential
+          - CA Host Credential
           labels: []
           notification_templates_error: []
           notification_templates_started: []
@@ -1040,7 +1042,7 @@
           job_type: run
           limit: ''
           name: 'Juniper / Import Host Certificate to CA Profile'
-          playbook: check_certificate_junos.yml
+          playbook: certificate_conf_junos.yml
           prevent_instance_group_fallback: false
           project: Ansible Network Examples
           credentials:
@@ -1327,7 +1329,7 @@
           survey_enabled: true
 
 
-    - name: Setup workflow Cert Management Workflow
+    - name: Setup Juniper Workflow for Certificate Management
       ansible.controller.workflow_job_template:
           name: 'Juniper / Certificate Management'
           description: ''
@@ -1356,7 +1358,19 @@
                   question_name: Minimum Days Before Certificate Renewal?
                   required: true
                   type: text
-                  variable: days
+                  variable: min_days
+              -   choices: ''
+                  default: ''
+                  max: 4
+                  min: 1
+                  new_question: true
+                  question_description: ''
+                  question_name: How many days should the certificate be signed for??
+                  required: true
+                  type: integer
+                  variable: renewal_days
+
+
           workflow_nodes:
           -   identifier: Check for Trustpoint
               unified_job_template:

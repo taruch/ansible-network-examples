@@ -13,18 +13,18 @@ Go and update passwords:\
     ServiceNow ITSM
     CA Host Credential
 
-Add the CA Host Credential to the Cisco / Trustpoint Create (issue)
+Add the CA Host Credential to the Cisco / Trustpoint Create (issue) fixed
 
 Update the inventory item for the CA host
 
 Create a machine credential for the CA host and add that to the 
 CA / Generate Certificate template (issue)
 
-Add the CA Host Credential the Cisco / Trustpoint Import Host Certificate (issue)
+Add the CA Host Credential the Cisco / Trustpoint Import Host Certificate (issue) fixed
 
 Juniper / Import CA Certificate to CA Profile
 Juniper / Import Host Certificate to CA Profile
-These both have the wrong playbook
+These both have the wrong playbook - fixed
 
 
 Add the CA Cert to the CA Profile
