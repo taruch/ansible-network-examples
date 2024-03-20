@@ -17,6 +17,8 @@ Add the CA Host Credential to the Cisco / Trustpoint Create (issue)
 
 Update the inventory item for the CA host
 
+Create a machine credential for the CA host and add that to the 
+CA / Generate Certificate template (issue)
 
-
+Add the CA Host Credential the Cisco / Trustpoint Import Host Certificate (issue)
 

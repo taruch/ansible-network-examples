@@ -139,7 +139,8 @@
         - name: Write CSR to file
           vars:
             ansible_user: "{{ CA_USERNAME }}"
-            ansible_password: "{{ CA_PASSWORD }}"
+            ansible_password: "{{ CA_PASSWORD }}" 
+            ansible_connection: ssh
           ansible.builtin.copy:
             content: "{{ csr.stdout }}"
             dest: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.csr"
@@ -148,7 +149,6 @@
             mode: '0644'
             backup: true
           delegate_to: ca-host
-          ansible_connection: ssh
 
     - name: Add the CA Cert to the CA Profile (check that this works on new host)
       tags:
