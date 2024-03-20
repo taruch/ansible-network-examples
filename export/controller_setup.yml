@@ -4,14 +4,19 @@
   connection: local
   gather_facts: false
   environment:
-    CONTROLLER_HOST: "{{ host }}"
-    CONTROLLER_USERNAME: "{{ username }}"
-    CONTROLLER_PASSWORD: "{{ password }}"
-    # CONTROLLER_OAUTH_TOKEN:
-    # CONTROLLER_HOST: "{{ controller }}"
-    # CONTROLLER_PASSWORD: "{{ pass }}"
-    # CONTROLLER_USERNAME: "{{ user }}"
+    # CONTROLLER_HOST: "{{ host }}"
+    # CONTROLLER_USERNAME: "{{ username }}"
+    # CONTROLLER_PASSWORD: "{{ password }}"
+    # # CONTROLLER_OAUTH_TOKEN:
+    # # CONTROLLER_HOST: "{{ controller }}"
+    # # CONTROLLER_PASSWORD: "{{ pass }}"
+    # # CONTROLLER_USERNAME: "{{ user }}"
     CONTROLLER_VERIFY_SSL: false
+  vars:
+    controller:
+      host: '{{ lookup("env", "CONTROLLER_HOST") }}'
+      username: '{{ lookup("env", "CONTROLLER_USERNAME") }}'
+      password: '{{ lookup("env", "CONTROLLER_PASSWORD") }}'  
 
   tasks:
     - name: Create ServiceNow Credential Type
