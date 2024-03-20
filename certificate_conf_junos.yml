@@ -148,7 +148,7 @@
             mode: '0644'
             backup: true
           delegate_to: ca-host
-          become: true
+          ansible_connection: ssh
 
     - name: Add the CA Cert to the CA Profile (check that this works on new host)
       tags:
