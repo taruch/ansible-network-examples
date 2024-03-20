@@ -253,9 +253,6 @@
             verbosity: 3
 
     - name: Set Client Name for Follow-on Templates
-      tags:
-        - generate_cert
-        - never
       ansible.builtin.set_stats:
         data:
           client: "{{ inventory_hostname }}"
