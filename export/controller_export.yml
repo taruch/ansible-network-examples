@@ -4,9 +4,9 @@
   connection: local
   gather_facts: false
   environment:
-    CONTROLLER_HOST: "https://student1.48s8p.example.opentlc.com"
+    CONTROLLER_HOST: "https://CHANGE_ME"
     CONTROLLER_USERNAME: admin
-    CONTROLLER_OAUTH_TOKEN: SrxgKQyFUmHDDZTqGf9WmmPK8QZnrS
+    CONTROLLER_OAUTH_TOKEN: CHANGE_ME
     # CONTROLLER_HOST: "{{ controller }}"
     # CONTROLLER_PASSWORD: "{{ pass }}"
     # CONTROLLER_USERNAME: "{{ user }}"
