@@ -4,10 +4,10 @@
   gather_facts: false
   vars:
     domain_name: ansible.local
-    ca_host: ec2-3-23-237-32.us-east-2.compute.amazonaws.com
-    trustpoint: CACERT
+    # ca_host: ec2-3-23-237-32.us-east-2.compute.amazonaws.com
+    # trustpoint: CACERT
     ansible_connection: ansible.netcommon.network_cli
-  
+
   tasks:
     - name: Backup Config
       tags:
@@ -84,7 +84,7 @@
           junipernetworks.junos.junos_command:
             commands: "clear security pki key-pair certificate-id {{ inventory_hostname }}_local"
           register: rsa_key_output
-    
+
 
     - name: Generate a certificate pair (works - not idempotent)
       tags:
@@ -98,11 +98,11 @@
             commands: "request security pki generate-key-pair certificate-id {{ inventory_hostname }}_local size 2048 type rsa"
           register: rsa_key_output
 
-        - name: fail the play if the previous command did not succeed
+        - name: Fail the play if the previous command did not succeed
           ansible.builtin.fail:
             msg: "{{ rsa_key_output.stdout }}"
           when:
-            - rsa_key_output.failed == true
+            - rsa_key_output.failed == 'True'
 
 
     - name: Generate CSR on Switch (works)
@@ -114,21 +114,21 @@
           junipernetworks.junos.junos_command:
             commands: "clear security pki certificate-request certificate-id {{ inventory_hostname }}_local"
 
-        - name: run command expecting user confirmation
+        - name: Run command expecting user confirmation
           ansible.netcommon.cli_command:
             command: "request security pki generate-certificate-request certificate-id {{ inventory_hostname }}_local domain-name {{ inventory_hostname }}.ansible.local subject CN={{ inventory_hostname }}.ansible.local,OU=NAPS,O=RedHat,L=Pasadena,ST=MD,C=US filename /var/tmp/{{ inventory_hostname }}.csr"
             # command: >
-            #   request security pki generate-certificate-request
+            #   "request security pki generate-certificate-request
             #   certificate-id {{ inventory_hostname }}_local domain-name {{ inventory_hostname }}.ansible.local
             #   subject CN={{ inventory_hostname }}.ansible.local,OU=NAPS,O=Red Hat,L=Pasadena,ST=MD,C=US
-            #    filename /var/tmp/{{ inventory_hostname }}.csr
+            #   filename /var/tmp/{{ inventory_hostname }}.csr"
             prompt: "Generated"
             answer: ""
           register: csr_output
 
         - name: Grab the output of the Certificate Signing Request
           ansible.netcommon.cli_command:
-            command: file show /var/tmp/{{ inventory_hostname }}.csr 
+            command: file show /var/tmp/{{ inventory_hostname }}.csr
           register: csr
 
         - name: Debug output
@@ -139,7 +139,7 @@
         - name: Write CSR to file
           vars:
             ansible_user: "{{ CA_USERNAME }}"
-            ansible_password: "{{ CA_PASSWORD }}" 
+            ansible_password: "{{ CA_PASSWORD }}"
             ansible_connection: ssh
           ansible.builtin.copy:
             content: "{{ csr.stdout }}"
@@ -148,7 +148,7 @@
             group: juniper
             mode: '0644'
             backup: true
-          delegate_to: ca-host
+          delegate_to: "{{ CA_HOST }}"
 
     - name: Add the CA Cert to the CA Profile (check that this works on new host)
       tags:
@@ -158,9 +158,9 @@
         - name: Clear CA Certificate
           ansible.netcommon.cli_command:
             command: "clear security pki ca-certificate ca-profile CACERT"
-            prompt: 
+            prompt:
               - "Are you sure you want to continue connecting"
-            answer: 
+            answer:
               - "yes"
           register: copy_output
 
@@ -188,12 +188,12 @@
         - name: Copy the CA cert to Router
           ansible.netcommon.cli_command:
             command: "scp juniper@{{ ca_host }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
-            prompt: 
+            prompt:
               - "password"
-            answer: 
+            answer:
               - "{{ CA_PASSWORD }}"
           register: copy_output
-                
+
         - name: Add the CA Certificate to the CA Profile
           ansible.netcommon.cli_command:
             command: "request security pki ca-certificate load ca-profile CACERT filename /var/tmp/cacert.pem"
@@ -206,7 +206,7 @@
         - import_host_certificate
         - never
       block:
-        - name: copy host cert to {{ inventory_hostname }}
+        - name: Copy host cert to network device
           ansible.netcommon.cli_command:
             command: "scp juniper@{{ ca_host }}:/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
             prompt: "password"
@@ -231,7 +231,7 @@
     #     - never
     #   junipernetworks.junos.junos_command:
     #     commands:
-    #       # - "request security pki generate-certificate-request certificate-id rtr3_local domain-name rtr3.ansible.local subject 'CN=rtr3.ansible.local,OU=NAPS,O=RedHat,L=Pasadena,ST=MD,C=US'" 
+    #       # - "request security pki generate-certificate-request certificate-id rtr3_local domain-name rtr3.ansible.local subject 'CN=rtr3.ansible.local,OU=NAPS,O=RedHat,L=Pasadena,ST=MD,C=US'"
     #       - "request security pki generate-certificate-request certificate-id rtr3_local domain-name rtr3.ansible.local subject CN=rtr3.ansible.local,OU=NAPS,O=RedHat,L=Pasadena,ST=MD,C=US"
 
     - name: Get running configuration and state data

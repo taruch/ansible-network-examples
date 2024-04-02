@@ -38,13 +38,13 @@
             msg: The system may not be provisioned with a certificate
           when: certificate_enddate.stdout == ""
 
-        - name: Set END_DATE Fact
+        - name: Set end_date Fact
           ansible.builtin.set_fact:
-            END_DATE: "{{ (certificate_enddate.stdout | from_yaml)['Not after'] }}"
+            end_date: "{{ (certificate_enddate.stdout | from_yaml)['Not after'] }}"
 
-        - name: Debug END_DATE
+        - name: Debug end_date
           ansible.builtin.debug:
-            msg: "{{ END_DATE }}"
+            msg: "{{ end_date }}"
 
         - name: Get System Time
           vars:
@@ -57,13 +57,13 @@
 
         - name: Debug Days left on certificate
           ansible.builtin.debug:
-            msg: "{{ ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
+            msg: "{{ (((end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
 
         - name: Fail when certificate needs to be updated
           ansible.builtin.fail:
             msg: The certificate needs to be updated
           when:
-            - ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < min_days | int
+            - ((( end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < min_days | int
 
     - name: Check Certificate Date on Host
       tags:
@@ -80,13 +80,13 @@
             msg: The system may not be provisioned with a certificate
           when: certificate_enddate.stdout is undefined
 
-        - name: Set END_DATE Fact
+        - name: Set end_date Fact
           ansible.builtin.set_fact:
-            END_DATE: "{{ (certificate_enddate.stdout | from_yaml)['Not after'] }}"
+            end_date: "{{ (certificate_enddate.stdout | from_yaml)['Not after'] }}"
 
-        - name: Debug END_DATE
+        - name: Debug end_date
           ansible.builtin.debug:
-            msg: "{{ END_DATE }}"
+            msg: "{{ end_date }}"
 
         - name: Get System Time
           ansible.builtin.command:
@@ -97,13 +97,13 @@
 
         - name: Debug Days left on certificate
           ansible.builtin.debug:
-            msg: "{{ ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
+            msg: "{{ (((end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
 
         - name: Fail when certificate needs to be updated
           ansible.builtin.fail:
             msg: The certificate needs to be updated
           when:
-            - ((( END_DATE | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < min_days | int
+            - ((( end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < min_days | int
 
 
     - name: Set Client Name for Follow-on Templates
@@ -125,7 +125,7 @@
       #     Organization: Red Hat, Country: US, Common name: Todd Ruch
       #   Subject:
       #     Organization: RedHat, Organizational unit: NAPS, Country: US, State: MD, Locality: Pasadena, Common name: rtr4.ansible.local
-      #   Subject string: 
+      #   Subject string:
       #     C=US, ST=MD, L=Pasadena, O=RedHat, OU=NAPS, CN=rtr4.ansible.local
       #   Cert-Chain: Todd Ruch
       #   Validity:
@@ -154,7 +154,7 @@
       #   Auto-re-enrollment:
       #     Status: Disabled
       #     Next trigger time: Timer not started
-      # ec2-user@rtr3> show security pki ca-certificate ca-profile CACERT 
+      # ec2-user@rtr3> show security pki ca-certificate ca-profile CACERT
       # LSYS: root-logical-system
       #   CA profile: CACERT
       # Certificate identifier: CACERT
@@ -164,7 +164,7 @@
       #     Not after: 06-28-2024 15:16 UTC
       #   Public key algorithm: rsaEncryption(2048 bits)
       #   Keypair Location: Keypair generated locally
-      # ec2-user@rtr3> show security pki local-certificate certificate-id rtr3 
+      # ec2-user@rtr3> show security pki local-certificate certificate-id rtr3
       # LSYS: root-logical-system
       # Certificate identifier: rtr3
       #   Issued to: rtr3.ansible.local, Issued by: C = US, O = Red Hat, CN = Todd Ruch
@@ -174,7 +174,7 @@
       #   Public key algorithm: rsaEncryption(2048 bits)
       #   Keypair Location: Keypair generated locally
       #
-      # ec2-user@rtr4> show security pki ca-certificate ca-profile CACERT brief | match "Not after"   
+      # ec2-user@rtr4> show security pki ca-certificate ca-profile CACERT brief | match "Not after"
       #     Not after: 06-28-2024 15:16 UTC
 
 ...
