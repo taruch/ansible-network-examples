@@ -18,7 +18,7 @@
         state: present
     
     - name: Copy ssh authorized_keys
-      ansible.buildin.command: cp -a /home/ec2-user/.ssh /home/ca-server-admin/
+      ansible.builtin.command: cp -a /home/ec2-user/.ssh /home/ca-server-admin/
 
     - name: Fix permissions on linux directory
       ansible.builtin.file:
