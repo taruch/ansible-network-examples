@@ -1,0 +1,129 @@
+---
+- name: Configure Demo Environment CA Server
+  hosts: ca_server
+  gather_facts: false
+  become: false
+
+  vars:
+    ansible_user: ec2-user
+    ca_files: "{{ _ca_files | default('/opt/X590CA') }}"
+
+  tasks:
+    - name: Create CA Directory on CA Server
+      ansible.builtin.file:
+        path: "{{ ca_files }}"
+        state: directory
+        mode: '0755'
+        owner: student
+        group: student
+
+    - name: Copy openssl.cfg file to CA Directory
+      ansible.builtin.copy:
+        src: ./files/openssl.cfg
+        dest: "{{ ca_files }}"
+        mode: '0640'
+        owner: student
+        group: student
+
+    - name: Copy openssl.cfg file to CA Directory
+      ansible.builtin.copy:
+        src: ./files/.rnd
+        dest: "{{ ca_files }}"
+        mode: '0640'
+        owner: student
+        group: student
+
+    - name: Create demoCA Directory on CA Server
+      ansible.builtin.file:
+        path: "{{ ca_files }}/demoCA"
+        state: directory
+        mode: '0750'
+        owner: student
+        group: student
+
+    - name: Create CA Certs Directory on CA Server
+      ansible.builtin.file:
+        path: "{{ ca_files }}/demoCA/certs"
+        state: directory
+        mode: '0750'
+        owner: student
+        group: student
+
+    - name: Create CA Private Key Directory on CA Server
+      ansible.builtin.file:
+        path: "{{ ca_files }}/demoCA/crl"
+        state: directory
+        mode: '0750'
+        owner: student
+        group: student
+
+    - name: Create newcerts CA Directory on CA Server
+      ansible.builtin.file:
+        path: "{{ ca_files }}/demoCA/newcerts"
+        state: directory
+        mode: '0750'
+        owner: student
+        group: student
+
+    - name: Create private CA Directory on CA Server
+      ansible.builtin.file:
+        path: "{{ ca_files }}/demoCA/private"
+        state: directory
+        mode: '0755'
+        owner: student
+        group: student
+
+    - name: Create index.txt file
+      ansible.builtin.file:
+        path: '{{ ca_files }}/demoCA/index.txt'
+        state: touch
+        mode: '0755'
+        owner: student
+        group: student
+
+    - name: Create index.txt.attr file
+      ansible.builtin.copy:
+        content: "unique_subject = no"
+        dest: '{{ ca_files }}/demoCA/index.txt.attr'
+        mode: '0755'
+        owner: student
+        group: student
+
+    - name: Create serial file
+      ansible.builtin.copy:
+        content: "01"
+        dest: '{{ ca_files }}/demoCA/serial'
+        mode: '0755'
+        owner: student
+        group: student
+
+    - name: Create private key with password protection
+      community.crypto.openssl_privatekey:
+        path: "{{ ca_files }}/cakey.pem"
+        passphrase: "{{ ca_passphrase }}"
+        cipher: auto
+        size: 2048
+
+    - name: Create certificate signing request (CSR) for CA certificate
+      community.crypto.openssl_csr_pipe:
+        privatekey_path: "{{ ca_files }}/cakey.pem"
+        privatekey_passphrase: "{{ ca_passphrase }}"
+        common_name: Ansible CA
+        use_common_name_for_san: false  # since we do not specify SANs, don't use CN as a SAN
+        basic_constraints:
+          - 'CA:TRUE'
+        basic_constraints_critical: true
+        key_usage:
+          - keyCertSign
+        key_usage_critical: true
+      register: ca_csr
+
+    - name: Create self-signed CA certificate from CSR
+      community.crypto.x509_certificate:
+        path: "{{ ca_files }}/cacert.pem"
+        csr_content: "{{ ca_csr.csr }}"
+        privatekey_path: "{{ ca_files }}demoCA/private/cakey.pem"
+        privatekey_passphrase: "{{ ca_passphrase }}"
+        provider: selfsigned
+
+...
