@@ -4,7 +4,7 @@
   gather_facts: false
 
   vars:
-    min_days: "{{ (minimum_days | default(10)) }}"
+    min_days: "{{ minimum_days | default(10) }}"
   tasks:
 
     - name: Check for TrustPoint on Host
