@@ -6,7 +6,7 @@
 
   vars:
     ansible_user: ec2-user
-    ca_files: "{{ _ca_files | default('/opt/X590CA') }}"
+    ca_files: "{{ _ca_files | default('/opt/X509CA') }}"
 
   tasks:
 

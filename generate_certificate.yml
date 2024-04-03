@@ -7,6 +7,7 @@
   vars:
     client: "{{ data.client | default('rtr1')}}"
     ca_passphrase: 'PASSW0RD'
+    ansible_user: ca-admin
     trustpoint: CACERT
     renewal_days: '20'
 
