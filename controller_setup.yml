@@ -55,6 +55,7 @@
           description: 'CA Host Credential Type'
           injectors:
               env:
+                  CA_HOST: "{% raw %}{{ host }}{% endraw %}"
                   CA_PASSWORD: "{% raw %}{{ password }}{% endraw %}"
                   CA_USERNAME: "{% raw %}{{ username }}{% endraw %}"
               extra_vars:
@@ -62,6 +63,9 @@
                   CA_USERNAME: "{% raw %}{{ username }}{% endraw %}"
           inputs:
               fields:
+              -   id: host
+                  label: Host
+                  type: string
               -   id: username
                   label: Username
                   type: string

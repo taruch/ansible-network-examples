@@ -8,6 +8,7 @@
     client: "{{ data.client | default('rtr1')}}"
     ca_passphrase: 'PASSW0RD'
     ansible_user: ca-admin
+    ansible_password: "{{ CA_PASSWORD }}"
     trustpoint: CACERT
     renewal_days: '20'
 
@@ -21,9 +22,9 @@
     - name: Generate Demo Certificate with OpenSSL from CSR
       ansible.builtin.expect:
         command: >
-          openssl ca -config /opt/X509CA/openssl.cfg 
-          -in /tmp/{{ client }}_{{ trustpoint }}.csr 
-          -out /tmp/{{ client }}_{{ trustpoint }}.cer 
+          openssl ca -config /opt/X509CA/openssl.cfg
+          -in /tmp/{{ client }}_{{ trustpoint }}.csr
+          -out /tmp/{{ client }}_{{ trustpoint }}.cer
           -days {{ renewal_days }} -notext
         responses:
           'Enter pass phrase': "{{ ca_passphrase }}"
