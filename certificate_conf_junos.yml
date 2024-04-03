@@ -207,7 +207,9 @@
       block:
         - name: Copy host cert to network device
           ansible.netcommon.cli_command:
-            command: "scp ca-admin@{{ ca_host }}:/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
+            command: >
+              "scp ca-admin@{{ ca_host }}:/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer
+              /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
             prompt: "password"
             answer: "{{ CA_PASSWORD }}"
           register: copy_output
@@ -219,19 +221,26 @@
 
         - name: Add the Host Certificate to the CA Profile
           ansible.netcommon.cli_command:
-            command: "request security pki local-certificate load certificate-id {{ inventory_hostname }}_local filename /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
-            # prompt: "certificate"
-            # answer: "yes"
+            command: >
+              "request security pki local-certificate load certificate-id {{ inventory_hostname }}_local
+              filename /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
           register: copy_output
 
-    # - name: Test Junos
-    #   tags:
-    #     - test_generate_csr
-    #     - never
-    #   junipernetworks.junos.junos_command:
-    #     commands:
-    #       # - "request security pki generate-certificate-request certificate-id rtr3_local domain-name rtr3.ansible.local subject 'CN=rtr3.ansible.local,OU=NAPS,O=RedHat,L=Pasadena,ST=MD,C=US'"
-    #       - "request security pki generate-certificate-request certificate-id rtr3_local domain-name rtr3.ansible.local subject CN=rtr3.ansible.local,OU=NAPS,O=RedHat,L=Pasadena,ST=MD,C=US"
+    - name: Test Junos Certificate
+      tags:
+        - test_certificates
+        - never
+      block:
+        - name: Show Security for CA Profile
+          junipernetworks.junos.junos_command:
+            commands:
+              - "show security pki ca-certificate ca-profile CACERT"
+              - show security pki local-certificate detail
+          register: test_result
+
+        - name: Debug the test test_result
+          ansible.builtin.debug:
+            var: test_result
 
     - name: Get running configuration and state data
       tags:
