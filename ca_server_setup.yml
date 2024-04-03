@@ -55,14 +55,16 @@
       register: ssh_password
 
     - name: Restart sshd
-      when: ssh_password.changed == 'true'
+      when: ssh_password.changed
       block:
         - name: Restart sshd
           ansible.builtin.service:
             name: sshd
             state: reloaded
+          timeout: 10
           register: command_result
           failed_when: "'Unable to reload service sshd' in command_result.msg"
+          ignore_errors: true
 
         - name: Sleep for 300 seconds and continue with play
           ansible.builtin.wait_for:
