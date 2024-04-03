@@ -128,9 +128,23 @@
         - ca_cert_trustpoint
         - never
       block:
+        - name: Slurp hosts file
+          vars:
+            ansible_user: "{{ CA_USERNAME }}"
+            ansible_password: "{{ CA_PASSWORD }}"
+          ansible.builtin.slurp:
+            src: "/opt/X509CA/demoCA/cacert.pem"
+          register: slurpfile
+          delegate_to: ca-host
+
+        # - name: Copy the host cert to EE
+        #   ansible.builtin.set_fact:
+        #     host_cert: "{{ (slurpfile['content'] | b64decode).splitlines() }}"
+
         - name: Create the template variable
           vars:
-            ca_cert: "{{ lookup('file', './certificates/cacert.cer').splitlines() }}"
+            ca_cert: "{{ (slurpfile['content'] | b64decode).splitlines() }}"
+            # ca_cert: "{{ lookup('file', './certificates/cacert.cer').splitlines() }}"
           ansible.builtin.set_fact:
             cacert_var: "{{ lookup('ansible.builtin.template', './templates/rtr_authenticate_CA.j2') | split('\n') }}"
 
