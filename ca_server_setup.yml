@@ -10,10 +10,17 @@
 
   tasks:
 
+    - name: Create a ca-server-admins group
+      ansible.builtin.group:
+        name: ca-server-admins
+        state: present
+
     - name: Create a CA Server user
       ansible.builtin.user:
-        name: ca-server-admin
-        home: /opt/X590CA
+        name: ca-admin
+        group: ca-admin
+        groups: adm
+        home: /home/ca-admin
         shell: /bin/bash
         state: present
         generate_ssh_key: true
@@ -21,24 +28,22 @@
         ssh_key_file: .ssh/id_rsa
       become: true
 
-    - name: Copy ssh authorized_keys
-      ansible.builtin.command: cp -a /home/ec2-user/.ssh/authorized_keys /home/ca-server-admin/.ssh/
+    - name: Add existing user ec2-user to group
+      ansible.builtin.user:
+        name: 'ec2-user'
+        groups: ca-server-admins
+        append: true
       become: true
 
-    # - name: Fix permissions on linux directory
-    #   ansible.builtin.file:
-    #     path: /home/ca-server-admin/.ssh
-    #     state: directory
-    #     owner: ca-server-admin
-    #     group: ca-server-admin
-    #     mode: '0750'
-    #   become: true
+    - name: Copy ssh authorized_keys
+      ansible.builtin.command: cp -a /home/ec2-user/.ssh/authorized_keys /home/ca-admin/.ssh/
+      become: true
 
     - name: Fix permissions on linux files
       ansible.builtin.file:
-        path: /home/ca-server-admin/.ssh/authorized_keys
-        owner: ca-server-admin
-        group: ca-server-admin
+        path: /home/ca-admin/.ssh/authorized_keys
+        owner: ca-admin
+        group: ca-admin
         mode: '0640'
       become: true
 
@@ -46,99 +51,99 @@
       ansible.builtin.file:
         path: "{{ ca_files }}"
         state: directory
-        mode: '0755'
-        owner: ec2-user
-        group: ec2-user
+        mode: '0775'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Copy openssl.cfg file to CA Directory
       ansible.builtin.copy:
         src: ./files/openssl.cfg
         dest: "{{ ca_files }}"
-        mode: '0640'
-        owner: ec2-user
-        group: ec2-user
+        mode: '0660'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Copy openssl.cfg file to CA Directory
       ansible.builtin.copy:
         src: ./files/.rnd
         dest: "{{ ca_files }}"
-        mode: '0640'
-        owner: ec2-user
-        group: ec2-user
+        mode: '0660'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Create demoCA Directory on CA Server
       ansible.builtin.file:
         path: "{{ ca_files }}/demoCA"
         state: directory
-        mode: '0750'
-        owner: ec2-user
-        group: ec2-user
+        mode: '0770'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Create CA Certs Directory on CA Server
       ansible.builtin.file:
         path: "{{ ca_files }}/demoCA/certs"
         state: directory
-        mode: '0750'
-        owner: ec2-user
-        group: ec2-user
+        mode: '0770'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Create CA Private Key Directory on CA Server
       ansible.builtin.file:
         path: "{{ ca_files }}/demoCA/crl"
         state: directory
-        mode: '0750'
-        owner: ec2-user
-        group: ec2-user
+        mode: '0770'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Create newcerts CA Directory on CA Server
       ansible.builtin.file:
         path: "{{ ca_files }}/demoCA/newcerts"
         state: directory
-        mode: '0750'
-        owner: ec2-user
-        group: ec2-user
+        mode: '0770'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Create private CA Directory on CA Server
       ansible.builtin.file:
         path: "{{ ca_files }}/demoCA/private"
         state: directory
-        mode: '0755'
-        owner: ec2-user
-        group: ec2-user
+        mode: '0770'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Create index.txt file
       ansible.builtin.file:
         path: '{{ ca_files }}/demoCA/index.txt'
-        state: touch
-        mode: '0755'
-        owner: ec2-user
-        group: ec2-user
+        state: present
+        mode: '0660'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Create index.txt.attr file
       ansible.builtin.copy:
         content: "unique_subject = no"
         dest: '{{ ca_files }}/demoCA/index.txt.attr'
-        mode: '0755'
-        owner: ec2-user
-        group: ec2-user
+        mode: '0660'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Create serial file
       ansible.builtin.copy:
         content: "01"
         dest: '{{ ca_files }}/demoCA/serial'
-        mode: '0755'
-        owner: ec2-user
-        group: ec2-user
+        mode: '0660'
+        owner: ca-admin
+        group: ca-server-admins
       become: true
 
     - name: Install pip
