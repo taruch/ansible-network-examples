@@ -19,8 +19,7 @@
     - name: Create a CA Server user
       ansible.builtin.user:
         name: ca-admin
-        group: ca-admin
-        groups: adm
+        groups: adm,ca-server-admins
         home: /home/ca-admin
         shell: /bin/bash
         state: present
