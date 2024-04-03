@@ -144,8 +144,8 @@
           ansible.builtin.copy:
             content: "{{ csr.stdout }}"
             dest: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.csr"
-            owner: juniper
-            group: juniper
+            owner: ca-admin
+            group: ca-admin
             mode: '0644'
             backup: true
           delegate_to: "{{ CA_HOST }}"
