@@ -19,7 +19,7 @@
     - name: Create a CA Server user
       ansible.builtin.user:
         name: ca-admin
-        password: {{ CA_PASSWORD | password_hash('sha512') }}
+        password: "{{ CA_PASSWORD | password_hash('sha512') }}"
         groups: adm,ca-server-admins,wheel
         home: /home/ca-admin
         shell: /bin/bash
