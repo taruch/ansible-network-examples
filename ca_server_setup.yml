@@ -52,11 +52,25 @@
         regexp: "PasswordAuthentication no"
         line: "PasswordAuthentication yes"
       become: true
+      register: ssh_password
 
     - name: Restart sshd
-      ansible.builtin.service:
-        name: sshd
-        state: restarted
+      when: ssh_password.changed == 'true'
+      block:
+        - name: Restart sshd
+          ansible.builtin.service:
+            name: sshd
+            state: reloaded
+          register: command_result
+          failed_when: "'Unable to reload service sshd' in command_result.msg"
+
+        - name: Sleep for 300 seconds and continue with play
+          ansible.builtin.wait_for:
+            timeout: 30
+            delay: 10
+            port: 22
+            host: "{{ (ansible_ssh_host | default(ansible_host)) | default(inventory_hostname) }}"
+          connection: local
 
     - name: "Allow admin users to sudo without a password"
       ansible.builtin.lineinfile:
@@ -65,7 +79,6 @@
         regexp: "^%wheel"
         line: "%wheel ALL=(ALL) NOPASSWD: ALL"
       become: true
-
 
     - name: Copy openssl.cfg file to CA Directory
       ansible.builtin.copy:
