@@ -120,9 +120,9 @@
       become: true
 
     - name: Create index.txt file
-      ansible.builtin.file:
-        path: '{{ ca_files }}/demoCA/index.txt'
-        state: file
+      ansible.builtin.copy:
+        content: ""
+        dest: '{{ ca_files }}/demoCA/index.txt'
         mode: '0660'
         owner: ca-admin
         group: ca-server-admins
