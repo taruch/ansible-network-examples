@@ -32,7 +32,6 @@
         domain_search:
           - "{{ domain_name }}"
 
-
     - name: Create a CA Profile on Router (works - idempotent)
       tags:
         - ca_profile_create
@@ -187,7 +186,7 @@
 
         - name: Copy the CA cert to Router
           ansible.netcommon.cli_command:
-            command: "scp juniper@{{ ca_host }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
+            command: "scp ca-admin@{{ ca_host }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
             prompt:
               - "password"
             answer:
@@ -208,7 +207,7 @@
       block:
         - name: Copy host cert to network device
           ansible.netcommon.cli_command:
-            command: "scp juniper@{{ ca_host }}:/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
+            command: "scp ca-admin@{{ ca_host }}:/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
             prompt: "password"
             answer: "{{ CA_PASSWORD }}"
           register: copy_output
