@@ -16,24 +16,31 @@
         home: /opt/X590CA
         shell: /bin/bash
         state: present
-    
-    - name: Copy ssh authorized_keys
-      ansible.builtin.command: cp -a /home/ec2-user/.ssh /home/ca-server-admin/
+        generate_ssh_key: true
+        ssh_key_bits: 2048
+        ssh_key_file: .ssh/id_rsa
+      become: true
 
-    - name: Fix permissions on linux directory
-      ansible.builtin.file:
-        path: /home/ca-server-admin/.ssh
-        state: directory
-        owner: ca-server-admin
-        group: ca-server-admin
-        mode: '0750'
-    
+    - name: Copy ssh authorized_keys
+      ansible.builtin.command: cp -a /home/ec2-user/.ssh/authorized_keys /home/ca-server-admin/.ssh/
+      become: true
+
+    # - name: Fix permissions on linux directory
+    #   ansible.builtin.file:
+    #     path: /home/ca-server-admin/.ssh
+    #     state: directory
+    #     owner: ca-server-admin
+    #     group: ca-server-admin
+    #     mode: '0750'
+    #   become: true
+
     - name: Fix permissions on linux files
       ansible.builtin.file:
-        path: /home/ca-server-admin/.ssh/*
+        path: /home/ca-server-admin/.ssh/authorized_keys
         owner: ca-server-admin
         group: ca-server-admin
         mode: '0640'
+      become: true
 
     - name: Create CA Directory on CA Server
       ansible.builtin.file:
