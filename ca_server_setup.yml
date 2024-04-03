@@ -19,7 +19,7 @@
     - name: Create a CA Server user
       ansible.builtin.user:
         name: ca-admin
-        groups: adm,ca-server-admins
+        groups: adm,ca-server-admins,wheel
         home: /home/ca-admin
         shell: /bin/bash
         state: present
@@ -55,6 +55,16 @@
         owner: ca-admin
         group: ca-server-admins
       become: true
+
+
+    - name: "Allow admin users to sudo without a password"
+      ansible.builtin.lineinfile:
+        dest: "/etc/sudoers"
+        state: "present"
+        regexp: "^%wheel"
+        line: "%wheel ALL=(ALL) NOPASSWD: ALL"
+      become: true
+
 
     - name: Copy openssl.cfg file to CA Directory
       ansible.builtin.copy:
