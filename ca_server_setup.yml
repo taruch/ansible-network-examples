@@ -199,7 +199,7 @@
       vars:
         ansible_user: ca-admin
       community.crypto.x509_certificate:
-        path: "{{ ca_files }}/cacert.pem"
+        path: "{{ ca_files }}/demoCA/cacert.pem"
         csr_content: "{{ ca_csr.csr }}"
         privatekey_path: "{{ ca_files }}/demoCA/private/cakey.pem"
         privatekey_passphrase: "{{ ca_passphrase }}"
