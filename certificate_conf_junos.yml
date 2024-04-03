@@ -240,7 +240,7 @@
 
         - name: Debug the test test_result
           ansible.builtin.debug:
-            var: test_result
+            msg: "{{ test_result.stdout_lines }}"
 
     - name: Get running configuration and state data
       tags:
