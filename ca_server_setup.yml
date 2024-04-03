@@ -36,18 +36,6 @@
         append: true
       become: true
 
-    - name: Copy ssh authorized_keys
-      ansible.builtin.command: cp -a /home/ec2-user/.ssh/authorized_keys /home/ca-admin/.ssh/
-      become: true
-
-    - name: Fix permissions on linux files
-      ansible.builtin.file:
-        path: /home/ca-admin/.ssh/authorized_keys
-        owner: ca-admin
-        group: ca-admin
-        mode: '0640'
-      become: true
-
     - name: Create CA Directory on CA Server
       ansible.builtin.file:
         path: "{{ ca_files }}"
@@ -57,6 +45,18 @@
         group: ca-server-admins
       become: true
 
+    - name: "Allow password based login"
+      ansible.builtin.lineinfile:
+        dest: "/etc/ssh/sshd_config.d/50-cloud-init.conf"
+        state: "present"
+        regexp: "PasswordAuthentication no"
+        line: "PasswordAuthentication yes"
+      become: true
+
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
 
     - name: "Allow admin users to sudo without a password"
       ansible.builtin.lineinfile:
