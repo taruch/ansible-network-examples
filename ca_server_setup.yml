@@ -201,7 +201,8 @@
       community.crypto.openssl_csr_pipe:
         privatekey_path: "{{ ca_files }}/demoCA/private/cakey.pem"
         privatekey_passphrase: "{{ ca_passphrase }}"
-        common_name: Ansible CA
+        # common_name: Ansible CA
+        subject: CN = ca-server.ansible.local, OU = NAPS, O = RedHat, L = Pasadena, ST = MD, C = US
         use_common_name_for_san: false  # since we do not specify SANs, don't use CN as a SAN
         basic_constraints:
           - 'CA:TRUE'
