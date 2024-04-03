@@ -4,7 +4,6 @@
   gather_facts: false
 
   vars:
-    trustpoint: aaptest1
     min_days: "{{ (minimum_days | default(10)) }}"
     ansible_connection: ansible.netcommon.network_cli
   tasks:

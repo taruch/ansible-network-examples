@@ -10,7 +10,7 @@
     ansible_user: ca-admin
     ansible_password: "{{ CA_PASSWORD }}"
     trustpoint: CACERT
-    renewal_days: '20'
+    renewal_days: "{{ renewal_days | default('20') }}"
 
   tasks:
     - name: Delete files
