@@ -163,8 +163,12 @@
       become: true
 
     - name: Install community python package on version 1.2.3
+      vars:
+        ansible_user: ca-admin
       ansible.builtin.pip:
-        name: cryptography>=1.2.3
+        name:
+          - cryptography>=1.2.3
+          - pexpect
 
     - name: Create private key with password protection
       community.crypto.openssl_privatekey:
