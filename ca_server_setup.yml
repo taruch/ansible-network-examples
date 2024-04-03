@@ -171,6 +171,8 @@
           - pexpect
 
     - name: Create private key with password protection
+      vars:
+        ansible_user: ca-admin
       community.crypto.openssl_privatekey:
         path: "{{ ca_files }}/demoCA/private/cakey.pem"
         passphrase: "{{ ca_passphrase }}"
@@ -178,6 +180,8 @@
         size: 2048
 
     - name: Create certificate signing request (CSR) for CA certificate
+      vars:
+        ansible_user: ca-admin
       community.crypto.openssl_csr_pipe:
         privatekey_path: "{{ ca_files }}/demoCA/private/cakey.pem"
         privatekey_passphrase: "{{ ca_passphrase }}"
@@ -192,6 +196,8 @@
       register: ca_csr
 
     - name: Create self-signed CA certificate from CSR
+      vars:
+        ansible_user: ca-admin
       community.crypto.x509_certificate:
         path: "{{ ca_files }}/cacert.pem"
         csr_content: "{{ ca_csr.csr }}"
