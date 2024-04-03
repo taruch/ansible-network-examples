@@ -122,7 +122,7 @@
     - name: Create index.txt file
       ansible.builtin.file:
         path: '{{ ca_files }}/demoCA/index.txt'
-        state: present
+        state: file
         mode: '0660'
         owner: ca-admin
         group: ca-server-admins
