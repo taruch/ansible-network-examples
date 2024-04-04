@@ -157,7 +157,7 @@
         - name: Clear CA Certificate
           ansible.netcommon.cli_command:
             command: "clear security pki ca-certificate ca-profile CACERT"
-           register: copy_output
+          register: copy_output
 
         ###  THIS CAN BE UNCOMMENTED AFTER I BUILD NEW EE with junos-eznc python pkg
         # - name: Slurp cacert from CA Host
