@@ -159,7 +159,7 @@
             command: "clear security pki ca-certificate ca-profile CACERT"
           register: copy_output
 
-        - name: Copy the CA cert to network device
+        - name: SSH to the CA host
           ansible.netcommon.cli_command:
             command: "ssh ca-admin@{{ CA_HOST }}  "
             prompt:
