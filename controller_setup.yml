@@ -59,6 +59,7 @@
                   CA_PASSWORD: "{% raw %}{{ password }}{% endraw %}"
                   CA_USERNAME: "{% raw %}{{ username }}{% endraw %}"
               extra_vars:
+                  CA_HOST: "{% raw %}{{ host }}{% endraw %}"
                   CA_PASSWORD: "{% raw %}{{ password }}{% endraw %}"
                   CA_USERNAME: "{% raw %}{{ username }}{% endraw %}"
           inputs:
@@ -74,6 +75,7 @@
                   secret: true
                   type: string
               required:
+              - host
               - username
               - password
           kind: cloud
@@ -108,7 +110,7 @@
           credential_type: CA Credential Type
           description: ''
           inputs:
-              username: juniper
+              username: ca-admin
               password: CHANGE_ME
           organization: Default
 
