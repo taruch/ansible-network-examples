@@ -52,9 +52,7 @@
 
         - name: Debug Days left on certificate
           ansible.builtin.debug:
-            msg: >
-              "Days left on certificate:
-               {{ (((end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
+            msg: "Days left on certificate: {{ (((end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
 
         - name: Debug min_days
           ansible.builtin.debug:
