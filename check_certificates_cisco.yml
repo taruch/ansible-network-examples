@@ -4,7 +4,7 @@
   gather_facts: false
 
   vars:
-    min_days: "{{ minimum_days | default(10) }}"
+    min_days: "{{ (minimum_days | default(10)) | int }}"
   tasks:
 
     - name: Check for TrustPoint on Host
@@ -70,7 +70,7 @@
 
         - name: Set Current Days
           ansible.builtin.set_fact:
-            current_days: "{{ (((item.END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
+            current_days: "{{ (((item.END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) | int }}"
           when:
             - item.CERTIFICATE_TYPE == "Certificate"
           loop: "{{ certs_parsed }}"
@@ -80,7 +80,7 @@
             msg: The certificate needs to be updated
           when:
             - item.CERTIFICATE_TYPE == "Certificate"
-            - (current_days) < (min_days | int)
+            - current_days < min_days
           loop: "{{ certs_parsed }}"
 
 ...
