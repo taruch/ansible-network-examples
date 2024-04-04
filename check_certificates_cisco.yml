@@ -67,7 +67,7 @@
             msg: The certificate needs to be updated
           when:
             - item.CERTIFICATE_TYPE == "Certificate"
-            - (((item.END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < min_days | int
+            - (((item.END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < (min_days | int)
           loop: "{{ certs_parsed }}"
 
 ...
