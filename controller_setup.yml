@@ -1200,8 +1200,6 @@
               spec:
               -   choices: ''
                   default: ''
-                  max: 24
-                  min: 1
                   new_question: true
                   question_description: ''
                   question_name: What is the name of the Trustpoint?
@@ -1210,24 +1208,24 @@
                   variable: trustpoint
               -   choices: ''
                   default: ''
-                  max: 4
+                  max: 1024
                   min: 1
                   new_question: true
                   question_description: ''
                   question_name: How long should the certificate renew for?
                   required: false
-                  type: text
+                  type: integer
                   variable: renewal_days
               -   choices: ''
                   default: ''
-                  max: 4
+                  max: 1024
                   min: 1
                   new_question: true
                   question_description: ''
                   question_name: Minimum Days Before Certificate Renewal?
                   required: true
-                  type: text
-                  variable: minumum_days
+                  type: integer
+                  variable: minimum_days
           workflow_nodes:
           -   identifier: Check for Trustpoint
               unified_job_template:
