@@ -219,9 +219,7 @@
 
         - name: Add the Host Certificate to the CA Profile
           ansible.netcommon.cli_command:
-            command: >
-              "request security pki local-certificate load certificate-id {{ inventory_hostname }}_local
-              filename /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
+            command: "request security pki local-certificate load certificate-id {{ inventory_hostname }}_local filename /var/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
           register: copy_output
 
     - name: Test Junos Certificate
