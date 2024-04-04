@@ -4,7 +4,7 @@
   gather_facts: false
 
   vars:
-    min_days: "{{ (minimum_days | default(10)) }}"
+    min_days: "{{ (minimum_days | default(10)) | int }}"
     ansible_connection: ansible.netcommon.network_cli
   tasks:
     - name: Check for CA Profile on Host
@@ -41,10 +41,6 @@
           ansible.builtin.set_fact:
             end_date: "{{ (certificate_enddate.stdout | from_yaml)['Not after'] }}"
 
-        - name: Debug end_date
-          ansible.builtin.debug:
-            msg: "{{ end_date }}"
-
         - name: Get System Time
           vars:
             ansible_connection: local
@@ -56,15 +52,27 @@
 
         - name: Debug Days left on certificate
           ansible.builtin.debug:
-            msg: "{{ (((end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
+            msg: >
+              "Days left on certificate:
+               {{ (((end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
+
+        - name: Debug min_days
+          ansible.builtin.debug:
+            msg: "Minumum days: {{ min_days | int }}"
+          when:
+            - min_days is defined
+
+        - name: Set Current Days
+          ansible.builtin.set_fact:
+            current_days: "{{ ((( end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) | int }}"
 
         - name: Fail when certificate needs to be updated
           ansible.builtin.fail:
             msg: The certificate needs to be updated
           when:
-            - ((( end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < min_days | int
+            - current_days < min_days
 
-    - name: Check Certificate Date on Host
+    - name: Check Certificate Date on CA Certificate
       tags:
         - check_ca_certificate_date
         - never
