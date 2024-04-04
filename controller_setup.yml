@@ -919,7 +919,8 @@
           prevent_instance_group_fallback: false
           project: Ansible Network Examples
           credentials:
-          -   Workshop Credential
+          - Workshop Credential
+          - CA Host Credential          
           labels: []
           notification_templates_error: []
           notification_templates_started: []
@@ -1051,6 +1052,7 @@
           project: Ansible Network Examples
           credentials:
           - Workshop Credential
+          - CA Host Credential
           labels: []
           notification_templates_error: []
           notification_templates_started: []
