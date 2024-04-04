@@ -1365,17 +1365,17 @@
                   variable: trustpoint
               -   choices: ''
                   default: ''
-                  max: 4
-                  min: 1
+                #   max: 100
+                #   min: 1
                   new_question: true
                   question_description: ''
                   question_name: Minimum Days Before Certificate Renewal?
                   required: true
-                  type: text
+                  type: integer
                   variable: min_days
               -   choices: ''
                   default: ''
-                  max: 4
+                  max: 100
                   min: 1
                   new_question: true
                   question_description: ''
@@ -1383,8 +1383,8 @@
                   required: true
                   type: integer
                   variable: renewal_days
-
-
+                  max: 1024
+                  min: 1
           workflow_nodes:
           -   identifier: Check for Trustpoint
               unified_job_template:
