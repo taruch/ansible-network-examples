@@ -159,7 +159,38 @@
             command: "clear security pki ca-certificate ca-profile CACERT"
           register: copy_output
 
-        ###  THIS CAN BE UNCOMMENTED AFTER I BUILD NEW EE with junos-eznc python pkg
+        - name: Copy the CA cert to network device
+          ansible.netcommon.cli_command:
+            command: "ssh ca-admin@{{ CA_HOST }}  "
+            prompt:
+              - "connecting"
+              - "password"
+            answer:
+              - "yes"
+              - "{{ CA_PASSWORD }}"
+          register: copy_output
+          ignore_errors: true
+          timeout: 10
+
+        - name: Copy the CA cert to network device
+          ansible.netcommon.cli_command:
+            command: "scp ca-admin@{{ CA_HOST }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
+            prompt:
+              - "connecting"
+              - "password"
+            answer:
+              - "yes"
+              - "{{ CA_PASSWORD }}"
+          register: copy_output
+
+        - name: Add the CA Certificate to the CA Profile
+          ansible.netcommon.cli_command:
+            command: "request security pki ca-certificate load ca-profile CACERT filename /var/tmp/cacert.pem"
+            prompt: "certificate"
+            answer: "yes"
+          register: copy_output
+
+        ###  This doesn't work... yes...
         # - name: Slurp cacert from CA Host
         #   ansible.builtin.slurp:
         #     src: "/tmp/{{ inventory_hostname }}.cer"
@@ -187,24 +218,6 @@
         #     answer:
         #       - "yes"
         #   register: copy_output
-
-        - name: Copy the CA cert to Router
-          ansible.netcommon.cli_command:
-            command: "scp ca-admin@{{ CA_HOST }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
-            prompt:
-              - "connecting"
-              - "password"
-            answer:
-              - "yes"
-              - "{{ CA_PASSWORD }}"
-          register: copy_output
-
-        - name: Add the CA Certificate to the CA Profile
-          ansible.netcommon.cli_command:
-            command: "request security pki ca-certificate load ca-profile CACERT filename /var/tmp/cacert.pem"
-            prompt: "certificate"
-            answer: "yes"
-          register: copy_output
 
     - name: Add the host Cert to the CA Profile (works)
       tags:
