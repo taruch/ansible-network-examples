@@ -20,7 +20,7 @@
         path: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
         state: absent
       become: true
-      delegate_to: ca_host
+      delegate_to: ca-host
 
     - name: Generate Demo Certificate with OpenSSL from CSR
       ansible.builtin.expect:
@@ -33,7 +33,7 @@
           'Enter pass phrase': "{{ ca_passphrase }}"
           'certificate?': 'y'
           'commit?': 'y'
-      delegate_to: ca_host
+      delegate_to: ca-host
 
 
 ...
