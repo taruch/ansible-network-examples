@@ -62,12 +62,25 @@
             - item.CERTIFICATE_TYPE == "Certificate"
           loop: "{{ certs_parsed }}"
 
+        - name: Debug min_days
+          ansible.builtin.debug:
+            msg: "{{ min_days | int }}"
+          when:
+            - min_days is defined
+
+        - name: Set Current Days
+          ansible.builtin.set_fact:
+            current_days: "{{ (((item.END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) }}"
+          when:
+            - item.CERTIFICATE_TYPE == "Certificate"
+          loop: "{{ certs_parsed }}"
+
         - name: Fail when certificate needs to be updated
           ansible.builtin.fail:
             msg: The certificate needs to be updated
           when:
             - item.CERTIFICATE_TYPE == "Certificate"
-            - (((item.END_DATE | to_datetime('%X UTC %b %d %Y')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) < (min_days | int)
+            - (current_days) < (min_days | int)
           loop: "{{ certs_parsed }}"
 
 ...
