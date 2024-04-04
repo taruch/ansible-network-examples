@@ -62,13 +62,13 @@
 
         - name: Set Current Days
           ansible.builtin.set_fact:
-            current_days: "{{ ((( end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) | int }}"
+            current_days: "{{ (((end_date | to_datetime('%m-%d-%Y %H:%M UTC')) - (current_date.stdout | to_datetime('%X UTC %b %d %Y'))).days) | int }}"
 
         - name: Fail when certificate needs to be updated
           ansible.builtin.fail:
             msg: The certificate needs to be updated
           when:
-            - current_days < min_days
+            - (current_days | int) < (min_days | int)
 
     - name: Check Certificate Date on CA Certificate
       tags:
