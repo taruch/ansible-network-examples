@@ -157,11 +157,7 @@
         - name: Clear CA Certificate
           ansible.netcommon.cli_command:
             command: "clear security pki ca-certificate ca-profile CACERT"
-            prompt:
-              - "Are you sure you want to continue connecting"
-            answer:
-              - "yes"
-          register: copy_output
+           register: copy_output
 
         ###  THIS CAN BE UNCOMMENTED AFTER I BUILD NEW EE with junos-eznc python pkg
         # - name: Slurp cacert from CA Host
@@ -183,6 +179,14 @@
         #     src: "/tmp/{{ inventory_hostname }}.cer"
         #     dest: /var/tmp/{{ inventory_hostname }}.test"
         ###
+        - name: Accept the "Are you sure" question
+          ansible.netcommon.cli_command:
+            command: "ssh ca-admin@{{ CA_HOST }}"
+            prompt:
+              - "Are you sure you want to continue connecting"
+            answer:
+              - "yes"
+          register: copy_output
 
         - name: Copy the CA cert to Router
           ansible.netcommon.cli_command:

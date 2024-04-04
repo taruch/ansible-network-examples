@@ -54,10 +54,6 @@
       ansible.controller.credential_type:
           description: 'CA Host Credential Type'
           injectors:
-              env:
-                  CA_HOST: "{% raw %}{{ host }}{% endraw %}"
-                  CA_PASSWORD: "{% raw %}{{ password }}{% endraw %}"
-                  CA_USERNAME: "{% raw %}{{ username }}{% endraw %}"
               extra_vars:
                   CA_HOST: "{% raw %}{{ host }}{% endraw %}"
                   CA_PASSWORD: "{% raw %}{{ password }}{% endraw %}"
