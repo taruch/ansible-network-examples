@@ -159,19 +159,6 @@
             command: "clear security pki ca-certificate ca-profile CACERT"
           register: copy_output
 
-        - name: SSH to the CA host
-          ansible.netcommon.cli_command:
-            command: "ssh ca-admin@{{ CA_HOST }}  "
-            prompt:
-              - "connecting"
-              - "password"
-            answer:
-              - "yes"
-              - "{{ CA_PASSWORD }}"
-          register: copy_output
-          ignore_errors: true
-          timeout: 10
-
         - name: Copy the CA cert to network device
           ansible.netcommon.cli_command:
             command: "scp ca-admin@{{ CA_HOST }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
