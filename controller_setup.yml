@@ -112,9 +112,9 @@
 
     - name: Import Execution Environments
       ansible.controller.execution_environment:
-          credential: Gitlab Ansible_EE Token
-          description: ''
-          image: registry.gitlab.com/redhatautomation/ansible_ee/ruch-network-ee:latest
+          credential: ''
+          description: 'Network Examples EE'
+          image: quay.io/truch/network-examples:latest
           name: ruch-network-ee
           pull: missing
 
