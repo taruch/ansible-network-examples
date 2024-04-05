@@ -175,7 +175,7 @@
           job_tags: ''
           job_type: run
           limit: 'cisco'
-          name: CA / Generate Certificate
+          name: Cisco / CA / Generate Certificate
           playbook: generate_certificate.yml
           prevent_instance_group_fallback: false
           project: Ansible Network Examples
@@ -222,7 +222,7 @@
           job_tags: ''
           job_type: run
           limit: 'juniper'
-          name: CA / Generate Certificate
+          name: Juniper / CA / Generate Certificate
           playbook: generate_certificate.yml
           prevent_instance_group_fallback: false
           project: Ansible Network Examples
