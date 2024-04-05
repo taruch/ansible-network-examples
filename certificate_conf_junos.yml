@@ -180,7 +180,7 @@
             answer:
               - "yes"
               - "{{ CA_PASSWORD }}"
-          when: "'FAILED' in copy_output.stderr"
+          when: copy_output.stdout_lines contains "command timeout triggered"
           register: copy2_output
 
 
