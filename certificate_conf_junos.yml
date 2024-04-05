@@ -171,6 +171,10 @@
           register: copy_output
           ignore_errors: true
 
+        - name: Debug this
+          ansible.builtin.debug:
+            var: copy_output
+
         - name: Copy the CA cert to network device (Attempt 2)
           ansible.netcommon.cli_command:
             command: "scp ca-admin@{{ CA_HOST }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
