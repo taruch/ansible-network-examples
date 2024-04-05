@@ -159,7 +159,7 @@
             command: "clear security pki ca-certificate ca-profile CACERT"
           register: copy_output
 
-        - name: Copy the CA cert to network device
+        - name: Copy the CA cert to network device (Attempt 1)
           ansible.netcommon.cli_command:
             command: "scp ca-admin@{{ CA_HOST }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
             prompt:
@@ -169,6 +169,20 @@
               - "yes"
               - "{{ CA_PASSWORD }}"
           register: copy_output
+          ignore_errors: true
+
+        - name: Copy the CA cert to network device (Attempt 2)
+          ansible.netcommon.cli_command:
+            command: "scp ca-admin@{{ CA_HOST }}:/opt/X509CA/demoCA/cacert.pem /var/tmp/cacert.pem"
+            prompt:
+              - "connecting"
+              - "password"
+            answer:
+              - "yes"
+              - "{{ CA_PASSWORD }}"
+          when: "'FAILED' in copy_output.stderr"
+          register: copy2_output
+
 
         - name: Add the CA Certificate to the CA Profile
           ansible.netcommon.cli_command:
