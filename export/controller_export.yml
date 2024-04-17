@@ -4,12 +4,9 @@
   connection: local
   gather_facts: false
   environment:
-    CONTROLLER_HOST: "https://CHANGE_ME"
-    CONTROLLER_USERNAME: admin
-    CONTROLLER_OAUTH_TOKEN: CHANGE_ME
-    # CONTROLLER_HOST: "{{ controller }}"
-    # CONTROLLER_PASSWORD: "{{ pass }}"
-    # CONTROLLER_USERNAME: "{{ user }}"
+    CONTROLLER_HOST: '{{ lookup("env", "CONTROLLER_HOST") }}'
+    CONTROLLER_USERNAME: '{{ lookup("env", "CONTROLLER_USERNAME") }}'
+    CONTROLLER_PASSWORD: ' {{ lookup("env", "CONTROLLER_PASSWORD") }}'
     CONTROLLER_VERIFY_SSL: false
 
   tasks:
