@@ -153,15 +153,20 @@
         - never
       block:
         - name: Slurp cacert from CA Host
+          vars:
+            ansible_connection: ssh
           ansible.builtin.slurp:
-            src: "/opt/X509CA/demoCA/cacert.cer"
+            src: "/opt/X509CA/demoCA/cacert.pem"
           register: slurpedfile
           delegate_to: ca-host
 
         - name: Copy the CA cert to EE
+          vars:
+            ansible_connection: local
           ansible.builtin.copy:
             content: "{{ (slurpedfile['content'] | b64decode) }}"
-            dest: "/tmp/cacert.cer"
+            dest: "/tmp/cacert.pem"
+          delegate_to: localhost
 
         - name: Copy the cacert to juniper
           vars:
@@ -169,8 +174,8 @@
             ansible_connection: network_cli
             ansible_network_os: junipernetworks.junos.junos
           ansible.netcommon.net_put:
-            src: /tmp/cacert.cer
-            dest: /var/tmp/cacert.cer
+            src: /tmp/cacert.pem
+            dest: /var/tmp/cacert.pem
 
         - name: Clear CA Certificate
           ansible.netcommon.cli_command:
@@ -191,15 +196,20 @@
         - never
       block:
         - name: Slurp host certificate from CA Host
+          vars:
+            ansible_connection: ssh
           ansible.builtin.slurp:
             src: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
           register: slurpedfile
           delegate_to: ca-host
 
         - name: Copy the CA cert to EE
+          vars:
+            ansible_connection: local
           ansible.builtin.copy:
             content: "{{ (slurpedfile['content'] | b64decode) }}"
             dest: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
+          delegate_to: localhost
 
         - name: Copy the cacert to juniper
           vars:
