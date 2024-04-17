@@ -83,11 +83,13 @@
         - name: Set crypto policy
           when: crypto_policy.msg != 'LEGACY'
           ansible.builtin.command: update-crypto-policies --set LEGACY
+          become: true
           register: crypto_result
 
         - name: Reboot
           when: crypto_result.changed
           ansible.builtin.reboot:
+          become: true
 
         - name: Sleep for 300 seconds and continue with play
           ansible.builtin.wait_for:
@@ -204,6 +206,7 @@
     - name: Install community python package on version 1.2.3
       vars:
         ansible_user: ca-admin
+        ansible_password: "{{ CA_PASSWORD }}"
       ansible.builtin.pip:
         name:
           - cryptography>=1.2.3
@@ -212,6 +215,7 @@
     - name: Create private key with password protection
       vars:
         ansible_user: ca-admin
+        ansible_password: "{{ CA_PASSWORD }}"
       community.crypto.openssl_privatekey:
         path: "{{ ca_files }}/demoCA/private/cakey.pem"
         passphrase: "{{ ca_passphrase }}"
@@ -221,11 +225,18 @@
     - name: Create certificate signing request (CSR) for CA certificate
       vars:
         ansible_user: ca-admin
+        ansible_password: "{{ CA_PASSWORD }}"
       community.crypto.openssl_csr_pipe:
         privatekey_path: "{{ ca_files }}/demoCA/private/cakey.pem"
         privatekey_passphrase: "{{ ca_passphrase }}"
         # common_name: Ansible CA
-        subject: CN = ca-server.ansible.local, OU = NAPS, O = RedHat, L = Pasadena, ST = MD, C = US
+        subject:
+          CN: ca-server.ansible.local
+          OU: NAPS
+          O: RedHat
+          L: Pasadena
+          ST: MD
+          C: US
         use_common_name_for_san: false  # since we do not specify SANs, don't use CN as a SAN
         basic_constraints:
           - 'CA:TRUE'
@@ -238,6 +249,7 @@
     - name: Create self-signed CA certificate from CSR
       vars:
         ansible_user: ca-admin
+        ansible_password: "{{ CA_PASSWORD }}"
       community.crypto.x509_certificate:
         path: "{{ ca_files }}/demoCA/cacert.pem"
         csr_content: "{{ ca_csr.csr }}"
