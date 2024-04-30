@@ -155,6 +155,8 @@
         - name: Slurp cacert from CA Host
           vars:
             ansible_connection: ssh
+            ansible_user: "{{ CA_USERNAME }}"
+            ansible_password: "{{ CA_PASSWORD }}"
           ansible.builtin.slurp:
             src: "/opt/X509CA/demoCA/cacert.pem"
           register: slurpedfile
