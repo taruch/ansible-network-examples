@@ -45,34 +45,42 @@
         group: ca-server-admins
       become: true
 
-    - name: "Allow password based login"
-      ansible.builtin.lineinfile:
-        dest: "/etc/ssh/sshd_config.d/50-cloud-init.conf"
-        state: "present"
-        regexp: "PasswordAuthentication no"
-        line: "PasswordAuthentication yes"
-      become: true
-      register: ssh_password
+    - name: Check that the 50-cloud-init.conf exists
+      ansible.builtin.stat:
+        path: /etc/ssh/sshd_config.d/50-cloud-init.conf 
+      register: stat_result
 
-    - name: Restart sshd
-      when: ssh_password.changed
+    - name: Allow Password Based Login when necessary
       block:
+        - name: "Allow password based login"
+          ansible.builtin.lineinfile:
+            dest: "/etc/ssh/sshd_config.d/50-cloud-init.conf"
+            state: "present"
+            regexp: "PasswordAuthentication no"
+            line: "PasswordAuthentication yes"
+          become: true
+          register: ssh_password
+    
         - name: Restart sshd
-          ansible.builtin.service:
-            name: sshd
-            state: reloaded
-          timeout: 10
-          register: command_result
-          failed_when: "'Unable to reload service sshd' in command_result.msg"
-          ignore_errors: true
-
-        - name: Sleep for 300 seconds and continue with play
-          ansible.builtin.wait_for:
-            timeout: 30
-            delay: 10
-            port: 22
-            host: "{{ (ansible_ssh_host | default(ansible_host)) | default(inventory_hostname) }}"
-          connection: local
+          when: ssh_password.changed
+          block:
+            - name: Restart sshd
+              ansible.builtin.service:
+                name: sshd
+                state: reloaded
+              timeout: 10
+              register: command_result
+              failed_when: "'Unable to reload service sshd' in command_result.msg"
+              ignore_errors: true
+    
+            - name: Sleep for 300 seconds and continue with play
+              ansible.builtin.wait_for:
+                timeout: 30
+                delay: 10
+                port: 22
+                host: "{{ (ansible_ssh_host | default(ansible_host)) | default(inventory_hostname) }}"
+              connection: local
+      when: not stat_result.stat.exists
 
     - name: Ensure correct crypto policy
       block:
