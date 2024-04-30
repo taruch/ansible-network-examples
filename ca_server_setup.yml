@@ -49,6 +49,7 @@
       ansible.builtin.stat:
         path: /etc/ssh/sshd_config.d/50-cloud-init.conf 
       register: stat_result
+      become: true
 
     - name: Allow Password Based Login when necessary
       block:
