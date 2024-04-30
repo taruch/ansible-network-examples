@@ -200,6 +200,8 @@
         - name: Slurp host certificate from CA Host
           vars:
             ansible_connection: ssh
+            ansible_user: "{{ CA_USERNAME }}"
+            ansible_password: "{{ CA_PASSWORD }}"
           ansible.builtin.slurp:
             src: "/tmp/{{ inventory_hostname }}_{{ trustpoint }}.cer"
           register: slurpedfile
