@@ -47,7 +47,7 @@
 
     - name: Check that the 50-cloud-init.conf exists
       ansible.builtin.stat:
-        path: /etc/ssh/sshd_config.d/50-cloud-init.conf 
+        path: /etc/ssh/sshd_config.d/50-cloud-init.conf
       register: stat_result
       become: true
 
@@ -61,7 +61,7 @@
             line: "PasswordAuthentication yes"
           become: true
           register: ssh_password
-    
+
         - name: Restart sshd
           when: ssh_password.changed
           block:
@@ -73,7 +73,7 @@
               register: command_result
               failed_when: "'Unable to reload service sshd' in command_result.msg"
               ignore_errors: true
-    
+
             - name: Sleep for 300 seconds and continue with play
               ansible.builtin.wait_for:
                 timeout: 30

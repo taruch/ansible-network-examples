@@ -1,3 +1,10 @@
+This project requires a RHEL-9 host called `ca-host` in the workshop inventory, which
+contains the network devices in the workshop.  This host is used to generate certificates
+for the network devices.  If you use another project, such as Ansible Product-Demos 
+(github.com/ansible/product-demos) to create the VM, it will be located in the Demo inventory
+and won't be usable in this demo; this will require you to manually create the inventory host
+in the workshop inventory.
+
 Create the project "Ansible Network Examples"
  - Name: Ansible Network Examples
  - Organization: Default
@@ -12,9 +19,6 @@ Create the Setup Job Template "Ansible Network Examples Setup"
  - Playbook: controller_setup.yml
  - Credentials: Red Hat Ansible Automation Platform / Controller Credential
 LAUNCH!
-
-Update the credential "Gitlab Ansible_EE Token"
-- Password: Update with token
 
 Update the credential	"CA Host Credential"
  - Host: Host for the CA host (FQDN or IP)
