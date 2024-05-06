@@ -52,6 +52,7 @@
             CA_HOST: "{% raw %}{{ host }}{% endraw %}"
             CA_PASSWORD: "{% raw %}{{ password }}{% endraw %}"
             CA_USERNAME: "{% raw %}{{ username }}{% endraw %}"
+            CA_PASSPHRASE: "{% raw %}{{ passphrase }}{% endraw %}"
         inputs:
           fields:
             - id: host
@@ -64,10 +65,15 @@
               label: Password
               secret: true
               type: string
+            - id: passphrase
+              label: CA Server Passphrase
+              secret: true
+              type: string
           required:
             - host
             - username
             - password
+            - passphrase
         kind: cloud
         name: CA Credential Type
 
