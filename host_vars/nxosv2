@@ -226,8 +226,6 @@ ntp_global:
         vrf: default
     -   server: 132.163.97.2
         vrf: default
-    -   server: 132.163.97.3
-        vrf: default
 snmp_server:
     users:
         auth:
