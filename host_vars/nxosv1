@@ -205,7 +205,15 @@ l3_interfaces:
     name: mgmt0
 -   name: loopback0
 logging_global: {}
-ntp_global: {}
+ntp_global:
+    logging: true
+    master:
+        stratum: 2
+    servers:
+    -   server: 132.163.97.1
+        vrf: default
+    -   server: 132.163.97.2
+        vrf: default
 snmp_server:
     users:
         auth:
@@ -261,3 +269,18 @@ vlans:
     name: default
     state: active
     vlan_id: 1
+-   enabled: true
+    mode: ce
+    name: openstack_010
+    state: active
+    vlan_id: 10
+-   enabled: true
+    mode: ce
+    name: openstack_011
+    state: active
+    vlan_id: 11
+-   enabled: true
+    mode: ce
+    name: openstack_012
+    state: active
+    vlan_id: 12
