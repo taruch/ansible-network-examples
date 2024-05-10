@@ -1,0 +1,282 @@
+---
+
+- name: Setup Certificate Management Workflow
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  environment:
+    CONTROLLER_VERIFY_SSL: 'false'
+  vars:
+    controller:
+      host: '{{ lookup("env", "CONTROLLER_HOST") }}'
+      username: '{{ lookup("env", "CONTROLLER_USERNAME") }}'
+      password: '{{ lookup("env", "CONTROLLER_PASSWORD") }}'
+
+  tasks:
+
+    - name: Add nexusv1 host
+      ansible.controller.host:
+        name: nexusv1
+        description: "Certificate Authority"
+        inventory: "Workshop Inventory"
+        state: present
+        enabled: true
+        variables:
+          ansible_host=198.18.1.51
+          ansible_user=admin
+          ansible_password=admin
+
+    - name: Add nexusv2 host
+      ansible.controller.host:
+        name: nexusv1
+        description: "Certificate Authority"
+        inventory: "Workshop Inventory"
+        state: present
+        enabled: true
+        variables:
+          ansible_host=198.18.1.52
+          ansible_user=admin
+          ansible_password=admin
+
+    - name: Import Execution Environments
+      ansible.controller.execution_environment:
+        credential: ''
+        description: 'Network Examples EE'
+        image: quay.io/truch/network-examples:latest
+        name: ruch-network-ee
+        pull: missing
+
+
+    - name: Create 'IOS Gather Data' job template
+      ansible.controller.job_template:
+        name: IOS Gather Data (GitOps)
+        allow_simultaneous: false
+        ask_credential_on_launch: false
+        ask_diff_mode_on_launch: false
+        ask_execution_environment_on_launch: false
+        ask_forks_on_launch: false
+        ask_instance_groups_on_launch: false
+        ask_inventory_on_launch: false
+        ask_job_slice_count_on_launch: false
+        ask_job_type_on_launch: false
+        ask_labels_on_launch: false
+        ask_limit_on_launch: false
+        ask_scm_branch_on_launch: false
+        ask_skip_tags_on_launch: false
+        ask_tags_on_launch: false
+        ask_timeout_on_launch: false
+        ask_variables_on_launch: false
+        ask_verbosity_on_launch: false
+        become_enabled: false
+        description: ''
+        diff_mode: false
+        execution_environment: null
+        force_handlers: false
+        forks: 0
+        host_config_key: ''
+        inventory: Workshop Inventory
+        job_slice_count: 1
+        job_tags: ''
+        job_type: run
+        limit: 'cisco'
+        playbook: ios_gather_data.yml
+        prevent_instance_group_fallback: false
+        project: Ansible Network Examples
+        credentials:
+        scm_branch: ''
+        skip_tags: ''
+        start_at_task: ''
+        survey_enabled: false
+        timeout: 0
+        use_fact_cache: false
+        verbosity: 0
+        webhook_credential: null
+        webhook_service: ''
+
+
+    - name: Create 'IOS Base Configuration' job template
+      ansible.controller.job_template:
+        name: IOS Base Configuration
+        allow_simultaneous: false
+        ask_credential_on_launch: false
+        ask_diff_mode_on_launch: false
+        ask_execution_environment_on_launch: false
+        ask_forks_on_launch: false
+        ask_instance_groups_on_launch: false
+        ask_inventory_on_launch: false
+        ask_job_slice_count_on_launch: false
+        ask_job_type_on_launch: false
+        ask_labels_on_launch: false
+        ask_limit_on_launch: false
+        ask_scm_branch_on_launch: false
+        ask_skip_tags_on_launch: false
+        ask_tags_on_launch: false
+        ask_timeout_on_launch: false
+        ask_variables_on_launch: false
+        ask_verbosity_on_launch: false
+        become_enabled: false
+        description: ''
+        diff_mode: false
+        execution_environment: null
+        force_handlers: false
+        forks: 0
+        host_config_key: ''
+        inventory: Workshop Inventory
+        job_slice_count: 1
+        job_tags: ''
+        job_type: run
+        limit: 'cisco'
+        playbook: ios_base_configuration.yml
+        prevent_instance_group_fallback: false
+        project: Ansible Network Examples
+        credentials:
+        scm_branch: ''
+        skip_tags: ''
+        start_at_task: ''
+        survey_enabled: false
+        timeout: 0
+        use_fact_cache: false
+        verbosity: 0
+        webhook_credential: null
+        webhook_service: ''
+
+
+    - name: Create 'NXOS Gather Data' job template
+      ansible.controller.job_template:
+        name: NXOS Gather Data (GitOps)
+        allow_simultaneous: false
+        ask_credential_on_launch: false
+        ask_diff_mode_on_launch: false
+        ask_execution_environment_on_launch: false
+        ask_forks_on_launch: false
+        ask_instance_groups_on_launch: false
+        ask_inventory_on_launch: false
+        ask_job_slice_count_on_launch: false
+        ask_job_type_on_launch: false
+        ask_labels_on_launch: false
+        ask_limit_on_launch: false
+        ask_scm_branch_on_launch: false
+        ask_skip_tags_on_launch: false
+        ask_tags_on_launch: false
+        ask_timeout_on_launch: false
+        ask_variables_on_launch: false
+        ask_verbosity_on_launch: false
+        become_enabled: false
+        description: ''
+        diff_mode: false
+        execution_environment: null
+        force_handlers: false
+        forks: 0
+        host_config_key: ''
+        inventory: Workshop Inventory
+        job_slice_count: 1
+        job_tags: ''
+        job_type: run
+        limit: 'nexus'
+        playbook: nxos_gather_data.yml
+        prevent_instance_group_fallback: false
+        project: Ansible Network Examples
+        credentials:
+        scm_branch: ''
+        skip_tags: ''
+        start_at_task: ''
+        survey_enabled: false
+        timeout: 0
+        use_fact_cache: false
+        verbosity: 0
+        webhook_credential: null
+        webhook_service: ''
+
+
+    - name: Create 'NXOS Base Configuration' job template
+      ansible.controller.job_template:
+        name: NXOS Base Configuration
+        allow_simultaneous: false
+        ask_credential_on_launch: false
+        ask_diff_mode_on_launch: false
+        ask_execution_environment_on_launch: false
+        ask_forks_on_launch: false
+        ask_instance_groups_on_launch: false
+        ask_inventory_on_launch: false
+        ask_job_slice_count_on_launch: false
+        ask_job_type_on_launch: false
+        ask_labels_on_launch: false
+        ask_limit_on_launch: false
+        ask_scm_branch_on_launch: false
+        ask_skip_tags_on_launch: false
+        ask_tags_on_launch: false
+        ask_timeout_on_launch: false
+        ask_variables_on_launch: false
+        ask_verbosity_on_launch: false
+        become_enabled: false
+        description: ''
+        diff_mode: false
+        execution_environment: null
+        force_handlers: false
+        forks: 0
+        host_config_key: ''
+        inventory: Workshop Inventory
+        job_slice_count: 1
+        job_tags: ''
+        job_type: run
+        limit: 'nexus'
+        playbook: nxos_base_configuration.yml
+        prevent_instance_group_fallback: false
+        project: Ansible Network Examples
+        credentials:
+        scm_branch: ''
+        skip_tags: ''
+        start_at_task: ''
+        survey_enabled: false
+        timeout: 0
+        use_fact_cache: false
+        verbosity: 0
+        webhook_credential: null
+        webhook_service: ''
+
+
+    - name: Create 'NXOS User Configuration' job template
+      ansible.controller.job_template:
+        name: NXOS User Configuration
+        allow_simultaneous: false
+        ask_credential_on_launch: false
+        ask_diff_mode_on_launch: false
+        ask_execution_environment_on_launch: false
+        ask_forks_on_launch: false
+        ask_instance_groups_on_launch: false
+        ask_inventory_on_launch: false
+        ask_job_slice_count_on_launch: false
+        ask_job_type_on_launch: false
+        ask_labels_on_launch: false
+        ask_limit_on_launch: false
+        ask_scm_branch_on_launch: false
+        ask_skip_tags_on_launch: false
+        ask_tags_on_launch: false
+        ask_timeout_on_launch: false
+        ask_variables_on_launch: false
+        ask_verbosity_on_launch: false
+        become_enabled: false
+        description: ''
+        diff_mode: false
+        execution_environment: null
+        force_handlers: false
+        forks: 0
+        host_config_key: ''
+        inventory: Workshop Inventory
+        job_slice_count: 1
+        job_tags: ''
+        job_type: run
+        limit: 'nexus'
+        playbook: nxos_users.yml
+        prevent_instance_group_fallback: false
+        project: Ansible Network Examples
+        credentials:
+        scm_branch: ''
+        skip_tags: ''
+        start_at_task: ''
+        survey_enabled: false
+        timeout: 0
+        use_fact_cache: false
+        verbosity: 0
+        webhook_credential: null
+        webhook_service: ''

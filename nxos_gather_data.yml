@@ -43,6 +43,7 @@
       tags:
         - gitops
         - never
+      connection: local
       delegate_to: localhost
       block:
         - name: Retrieve a repository from a distant location and make it available locally
