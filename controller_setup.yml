@@ -82,7 +82,7 @@
         playbook: ios_gather_data.yml
         prevent_instance_group_fallback: false
         project: Ansible Network Examples
-        credentials:
+        credentials: 'Workshop Credential'
         scm_branch: ''
         skip_tags: ''
         start_at_task: ''
@@ -129,7 +129,7 @@
         playbook: ios_base_configuration.yml
         prevent_instance_group_fallback: false
         project: Ansible Network Examples
-        credentials:
+        credentials: 'Workshop Credential'
         scm_branch: ''
         skip_tags: ''
         start_at_task: ''
@@ -176,7 +176,7 @@
         playbook: nxos_gather_data.yml
         prevent_instance_group_fallback: false
         project: Ansible Network Examples
-        credentials:
+        credentials: 'Workshop Credential'
         scm_branch: ''
         skip_tags: ''
         start_at_task: ''
@@ -223,7 +223,7 @@
         playbook: nxos_base_configuration.yml
         prevent_instance_group_fallback: false
         project: Ansible Network Examples
-        credentials:
+        credentials: 'Workshop Credential'
         scm_branch: ''
         skip_tags: ''
         start_at_task: ''
@@ -270,7 +270,7 @@
         playbook: nxos_users.yml
         prevent_instance_group_fallback: false
         project: Ansible Network Examples
-        credentials:
+        credentials: 'Workshop Credential'
         scm_branch: ''
         skip_tags: ''
         start_at_task: ''
