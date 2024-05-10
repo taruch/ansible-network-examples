@@ -1,0 +1,205 @@
+---
+controller_components:
+  - projects
+  - credential_types
+  - credentials
+  - execution_environments
+  - hosts
+  - inventory_sources
+  - job_templates
+  - workflow_job_templates
+
+
+controller_credential_types:
+  - name: ServiceNow ITSM
+    kind: cloud
+    inputs:
+      fields:
+        - id: host
+          label: Host
+          type: string
+        - id: username
+          label: Username
+          type: string
+        - id: password
+          label: Password
+          secret: true
+          type: string
+      required:
+        - instance
+        - username
+        - password
+        - passphrase
+    injectors:
+      extra_vars:
+        SN_HOST: "{  { host }}"
+        SN_PASSWORD: "{  { password }}"
+        SN_USERNAME: "{  { username }}"
+    
+  - name: CA Credential Type
+    kind: cloud
+    description: 'CA Host Credential Type'
+    injectors:
+      extra_vars:
+        CA_HOST: "{  { host }}"
+        CA_PASSWORD: "{  { password }}"
+        CA_USERNAME: "{  { username }}"
+        CA_PASSPHRASE: "{  { passphrase }}"
+    inputs:
+      fields:
+        - id: host
+          label: Host
+          type: string
+        - id: username
+          label: Username
+          type: string
+        - id: password
+          label: Password
+          secret: true
+          type: string
+        - id: passphrase
+          label: CA Secret
+          secret: true
+          type: string
+      required:
+        - host
+        - username
+        - password
+        - passphrase
+
+
+controller_credentials:
+  - name: ServiceNow ITSM
+    credential_type: ServiceNow ITSM
+    description: ''
+    inputs:
+      host: https://ven05430.service-now.com/
+      password: ''
+      username: CHANGE_ME
+    organization: Red Hat network organization
+
+  - name: CA Host Credential
+    credential_type: CA Credential Type
+    inputs:
+      username: ca-admin
+      password: CHANGE_ME
+      passphrase: CHANGE_ME
+    organization: "Red Hat network organization"
+
+
+controller_execution_environments:
+  - name: ruch-network-ee
+    description: 'Network Examples EE'
+    image: quay.io/truch/network-examples:latest
+    pull: missing
+
+
+controller_hosts:
+  - name: nxosv1
+    description: "Certificate Authority"
+    inventory: "Workshop Inventory"
+    state: present
+    enabled: true
+    variables:
+      - ansible_host=198.18.1.51
+      - ansible_user=admin
+      - ansible_password=admin
+
+  - name: nxosv2
+    description: "Certificate Authority"
+    inventory: "Workshop Inventory"
+    state: present
+    enabled: true
+    variables:
+      - ansible_host=198.18.1.52
+      - ansible_user=admin
+      - ansible_password=admin
+
+controller_projects:
+  - name: ServiceNow Examples
+    organization: "Red Hat network organization"
+    scm_type: git
+    wait: true
+    scm_url: https://github.com/taruch/symmetrical-octo-umbrella.git
+
+
+controller_templates:
+  - name: IOS Base Configuration
+    execution_environment: 'ruch-network-ee'
+    organization: "Red Hat network organization"
+    forks: 0
+    host_config_key: ''
+    inventory: Workshop Inventory
+    job_slice_count: 1
+    job_tags: ''
+    job_type: run
+    limit: 
+    playbook: base_configuration/ios_base_configuration.yml
+    prevent_instance_group_fallback: false
+    project: Network Demos
+    credentials:
+
+
+  - name: IOS Gather Data (GitOps)
+    execution_environment: 'ruch-network-ee'
+    organization: "Red Hat network organization"
+    forks: 0
+    host_config_key: ''
+    inventory: Workshop Inventory
+    job_slice_count: 1
+    job_tags: 'gitops'
+    job_type: run
+    limit: 
+    playbook: base_configuration/ios_gather_data.yml
+    prevent_instance_group_fallback: false
+    project: Network Demos
+    credentials:
+
+
+  - name: NXOS Base Configuration
+    execution_environment: 'ruch-network-ee'
+    organization: "Red Hat network organization"
+    forks: 0
+    host_config_key: ''
+    inventory: Workshop Inventory
+    job_slice_count: 1
+    job_tags: ''
+    job_type: run
+    limit: 
+    playbook: base_configuration/nxos_base_configuration.yml
+    prevent_instance_group_fallback: false
+    project: Network Demos
+    credentials:
+
+
+  - name: NXOS Gather Data (GitOps)
+    execution_environment: 'ruch-network-ee'
+    organization: "Red Hat network organization"
+    forks: 0
+    host_config_key: ''
+    inventory: Workshop Inventory
+    job_slice_count: 1
+    job_tags: ''
+    job_type: run
+    limit: 
+    playbook: base_configuration/nxos_gather_data.yml
+    prevent_instance_group_fallback: false
+    project: Network Demos
+    credentials:
+
+
+  - name: NXOS Add Admin User
+    execution_environment: ruch-network-ee
+    organization: "Red Hat network organization"
+    forks: 0
+    host_config_key: ''
+    inventory: Workshop Inventory
+    job_slice_count: 1
+    job_tags: ''
+    job_type: run
+    limit: ''
+    playbook: base_configuration/nxos_users.yml
+    prevent_instance_group_fallback: false
+    project: Network Demos
+    credentials:
+

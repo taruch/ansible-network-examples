@@ -1,3 +1,0 @@
----
-ansible_pass: admin
-git_url: 'https://github.com/taruch/ansible-network-examples.git'

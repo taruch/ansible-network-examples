@@ -6,4 +6,4 @@ tokens
 collections/ansible_collections
 X509CA
 X509CA_orig
-group_vars/all
+group_vars
