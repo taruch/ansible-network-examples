@@ -1,46 +1,96 @@
 ---
-- name: Gather configuration information from NXOS devices
-  hosts: cisco_routers
+- name: Gather configuration information from Cisco IOS-XE devices
+  hosts: cisco
   gather_facts: no
 
   tasks:
-  - name: Backup Config
-    cisco.ios.ios_config:
-      backup: "{{ backup_switch }}"
+    - name: Backup Config
+      tags:
+        - never
+        - backup
+      cisco.ios.ios_config:
+        backup: true
 
-  - name: Gather network information as structured data
-    cisco.ios.ios_facts:
-      gather_network_resources:
-        - 'all'
-        # - 'ntp_global'
-        # - 'logging_global'
-        # - 'hostname'
-        # - 'snmp_server'
-        # - 'vlans'
-        # - 'interfaces'
-        # - 'l2_interfaces'
-        # - 'l3_interfaces'
-        # - 'lag_interfaces'
-        # - 'lldp_interfaces'
-        # - 'lldp_global'
-        # - 'lacp'
-        # - 'lacp_interfaces'
-        # - 'service'
-        # - 'bgp_global'
-        # - 'bgp_address_family'
-        # - 'ospf_interfaces'
-        # - 'ospfv2'
-        # - 'ospfv3'
-        # - 'prefix_lists'
-        # - 'static_routes'
-        # - 'acl_interfaces'
+    - name: Gather network information as structured data
+      tags:
+        - always
+      cisco.ios.ios_facts:
+        gather_network_resources:
+          - 'all'
+          # - 'ntp_global'
+          # - 'logging_global'
+          # - 'hostname'
+          # - 'snmp_server'
+          # - 'vlans'
+          # - 'interfaces'
+          # - 'l2_interfaces'
+          # - 'l3_interfaces'
+          # - 'lag_interfaces'
+          # - 'lldp_interfaces'
+          # - 'lldp_global'
+          # - 'lacp'
+          # - 'lacp_interfaces'
+          # - 'service'
+          # - 'bgp_global'
+          # - 'bgp_address_family'
+          # - 'ospf_interfaces'
+          # - 'ospfv2'
+          # - 'ospfv3'
+          # - 'prefix_lists'
+          # - 'static_routes'
+          # - 'acl_interfaces'
 
-  - name: Print out
-    ansible.builtin.debug:
-      msg: "{{ ansible_network_resources | to_nice_yaml }}"
+    - name: Print out
+      ansible.builtin.debug:
+        msg: "{{ ansible_network_resources | to_nice_yaml }}"
 
-  - name: Store VLAN facts to host_vars
-    ansible.builtin.copy:
-      content: "{{ ansible_network_resources | to_nice_yaml }}"
-      dest: "./host_vars/{{ inventory_hostname }}"
-    delegate_to: localhost 
+
+    - name: GitOps functions
+      tags:
+        - gitops
+        - never
+      connection: local
+      delegate_to: localhost
+      block:
+        - name: Retrieve a repository from a distant location and make it available locally
+          ansible.scm.git_retrieve:
+            origin:
+              url: "{{ git_url }}"
+              token: "{{ github_token }}"
+          register: repository
+
+        - name: Debug repository data
+          ansible.builtin.debug:
+            var: repository
+            verbosity: 2
+
+        - name: Create a host_vars directory if it does not exist
+          when: ansible_network_resources is defined
+          ansible.builtin.file:
+            path: "{{ repository['path'] }}/host_vars"
+            state: directory
+            mode: '0755'
+
+        - name: Add network facts to the repository
+          when: ansible_network_resources is defined
+          ansible.builtin.copy:
+            content: "{{ ansible_network_resources | to_nice_yaml }}"
+            dest: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}"
+          register: result
+
+        - name: Set date_time variable
+          ansible.builtin.set_fact:
+            date_time: "{{ lookup('pipe', 'date +%Y-%m-%d%H:%M:%S') }}"
+
+        - name: Publish the changes
+          when: result.changed
+          ansible.scm.git_publish:
+            commit:
+              message: "Backup at {{ date_time }}"
+            include: "--all"
+            path: "{{ repository['path'] }}"
+            user:
+              name: "Todd Ruch"
+              email: truch@redhat.com
+            token: "{{ github_token }}"
+      ### End of GitOps Block
