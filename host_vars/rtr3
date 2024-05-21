@@ -4,9 +4,9 @@ interfaces:
 -   enabled: true
     name: gr-0/0/0
 -   enabled: true
-    name: lo0
--   enabled: true
     name: fxp0
+-   enabled: true
+    name: lo0
 junos_ospf_interfaces:
 -   address_family:
     -   afi: ipv4
@@ -26,6 +26,9 @@ l2_interfaces:
     name: gr-0/0/0
     unit: 0
 -   enhanced_layer: false
+    name: fxp0
+    unit: 0
+-   enhanced_layer: false
     name: lo0
     unit: 0
 l3_interfaces:
@@ -35,6 +38,7 @@ l3_interfaces:
     unit: '0'
 -   ipv4:
     -   address: 192.168.3.3/32
+    -   address: 192.168.10.3/32
     name: lo0
     unit: '0'
 lacp: {}
