@@ -1,0 +1,48 @@
+hostname:
+    hostname: rtr3
+interfaces:
+-   enabled: true
+    name: gr-0/0/0
+-   enabled: true
+    name: lo0
+-   enabled: true
+    name: fxp0
+junos_ospf_interfaces:
+-   address_family:
+    -   afi: ipv4
+        processes:
+            area:
+                area_id: 0.0.0.0
+    name: gr-0/0/0.0
+-   address_family:
+    -   afi: ipv4
+        processes:
+            area:
+                area_id: 0.0.0.0
+            passive: true
+    name: lo0.0
+l2_interfaces:
+-   enhanced_layer: false
+    name: gr-0/0/0
+    unit: 0
+-   enhanced_layer: false
+    name: lo0
+    unit: 0
+l3_interfaces:
+-   ipv4:
+    -   address: 10.100.100.2/24
+    name: gr-0/0/0
+    unit: '0'
+-   ipv4:
+    -   address: 192.168.3.3/32
+    name: lo0
+    unit: '0'
+lacp: {}
+lldp_global: {}
+ospfv2:
+-   areas:
+    -   area_id: 0.0.0.0
+        interfaces:
+        -   name: gr-0/0/0.0
+        -   name: lo0.0
+            passive: true
