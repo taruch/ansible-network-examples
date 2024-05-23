@@ -139,4 +139,8 @@ vlans:
     shutdown: enabled
     state: active
     vlan_id: 1005
+-   mtu: 1500
+    name: netopsvlan
+    state: active
+    vlan_id: 10
 vxlan_vtep: {}
