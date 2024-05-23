@@ -1,6 +1,6 @@
 ---
 - name: Configure IOS XE device
-  hosts: ios
+  hosts: cisco
   gather_facts: false
   vars:
     _domain_name_: ansible.local
