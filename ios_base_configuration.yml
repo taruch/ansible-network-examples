@@ -13,7 +13,7 @@
 
     - name: Configure hostname and domain name
       tags:
-        - always
+        - never
         - fqdn
       cisco.ios.ios_system:
         hostname: "{{ hostname }}"
