@@ -1,0 +1,111 @@
+---
+- name: Gather configuration information from network devices
+  hosts: cisco
+  gather_facts: false
+  vars:
+    gitea_password: PASSW0RD
+    gitea_username: gitea
+    gitea_email: gitea@localhost
+
+  tasks:
+
+    # This task will backup the configuration
+    - name: Backup cisco ios configuration
+      cisco.ios.ios_config:
+        backup: true
+        backup_options:
+          dir_path: /tmp/
+          filename: "{{ inventory_hostname }}.txt"
+      register: config_output
+
+    # This task removes the Current configuration... from the top of IOS routers show run
+    - name: Remove non config lines - regexp
+      ansible.builtin.lineinfile:
+        path: "{{ config_output.backup_path }}"
+        line: "Building configuration..."
+        state: absent
+      delegate_to: localhost
+
+    - name: Gather network information as structured data
+      cisco.ios.ios_facts:
+        gather_network_resources:
+          - 'all'
+
+    - name: Print out
+      ansible.builtin.debug:
+        msg: "{{ ansible_network_resources }}"
+        verbosity: 2
+
+    - name: GitOps functions
+      delegate_to: localhost
+      when: ansible_network_resources is defined
+      block:
+        - name: Disable SSL verification for self-signed certificate
+          ansible.builtin.command: git config --global http.sslVerify false
+          changed_when: false
+
+        - name: Retrieve a repository from a distant location and make it available locally
+          ansible.scm.git_retrieve:
+            origin:
+              url: "http://gitea@192.168.122.17/gitea/network-demos-repo.git"
+              token: "{{ gitea_password }}"
+          register: repository
+
+        - name: Debug repository data
+          ansible.builtin.debug:
+            var: repository
+            verbosity: 2
+
+        - name: Create a host_vars directory if it does not exist
+          ansible.builtin.file:
+            path: "{{ repository['path'] }}/base_configuration/host_vars"
+            state: directory
+            mode: '0755'
+
+        - name: Create a backup directory if it does not exist
+          ansible.builtin.file:
+            path: "{{ repository['path'] }}/base_configuration/config_backups"
+            state: directory
+            mode: '0755'
+
+        - name: Add network facts to the repository
+          ansible.builtin.copy:
+            content: "{{ ansible_network_resources | to_nice_yaml }}"
+            dest: "{{ repository['path'] }}/base_configuration/host_vars/{{ inventory_hostname }}"
+          register: result
+
+        - name: Create a backup directory if it does not exist
+          ansible.builtin.file:
+            path: "{{ repository['path'] }}/base_configuration/config_backups"
+            state: directory
+            mode: '0755'
+
+        - name: Add config_backup to the repository
+          ansible.builtin.copy:
+            src: "/tmp/{{ inventory_hostname }}.txt"
+            dest: "{{ repository['path'] }}/base_configuration/config_backups/{{ inventory_hostname }}.txt"
+          register: result
+
+        - name: Set date_time variable
+          ansible.builtin.set_fact:
+            date_time: "{{ lookup('pipe', 'date +%Y-%m-%d%H:%M:%S') }}"
+
+        - name: Set remote URL with credentials for push
+          ansible.builtin.command:
+            cmd: "git -C {{ repository['path'] }} remote set-url origin http://{{ gitea_username }}:{{ gitea_password }}@192.168.122.17/gitea/network-demos-repo.git"
+          changed_when: false
+
+        - name: Publish the changes
+          when: result.changed
+          ansible.scm.git_publish:
+            commit:
+              message: "Update at {{ date_time }}"
+            include: "--all"
+            path: "{{ repository['path'] }}"
+            token: "{{ gitea_password }}"
+            user:
+              name: "{{ gitea_username }}"
+              email: "{{ gitea_email }}"
+      ### End of GitOps Block
+
+...
