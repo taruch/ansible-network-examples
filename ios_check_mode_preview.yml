@@ -1,0 +1,197 @@
+---
+# Resource Module Check Mode Preview
+#
+# This playbook demonstrates using resource modules in check mode to show:
+#   - BEFORE: what the device config looks like right now (structured data)
+#   - AFTER:  what the device config will look like after changes (structured data)
+#   - COMMANDS: the exact CLI commands that would be sent to get from before to after
+#
+# Nothing is changed on the device. This is a read-only preview.
+#
+# Usage:
+#   Preview NTP changes:
+#     ansible-playbook ios_check_mode_preview.yml --tags ntp
+#
+#   Preview all sections:
+#     ansible-playbook ios_check_mode_preview.yml --tags ntp,vlans,interfaces,l3_interfaces,snmp
+#
+# In AAP/Controller:
+#   Create a job template with "Job Type: Check" and use tags to select
+#   which config sections to preview. The structured before/after output
+#   gives the network engineer full visibility into what will change.
+
+- name: Resource Module Check Mode Preview -- What Is vs What Will Be
+  hosts: cisco
+  gather_facts: false
+  check_mode: true
+
+  tasks:
+    # ----- NTP -----
+    - name: Preview NTP changes
+      tags:
+        - never
+        - ntp
+      block:
+        - name: Combine host and group NTP configuration
+          ansible.builtin.set_fact:
+            device_ntp: "{{ ntp_global | combine(group_ntp_global | default({})) }}"
+
+        - name: "NTP: compute changes (check mode -- no changes applied)"
+          cisco.ios.ios_ntp_global:
+            config: "{{ device_ntp }}"
+            state: replaced
+          register: ntp_preview
+
+        - name: "NTP: current state (BEFORE)"
+          ansible.builtin.debug:
+            msg: "{{ ntp_preview.before | default({}) | to_nice_yaml }}"
+
+        - name: "NTP: desired state (AFTER)"
+          ansible.builtin.debug:
+            msg: "{{ ntp_preview.after | default({}) | to_nice_yaml }}"
+
+        - name: "NTP: CLI commands that would be sent"
+          ansible.builtin.debug:
+            msg: "{{ ntp_preview.commands }}"
+          when: ntp_preview.commands | default([]) | length > 0
+
+        - name: "NTP: no changes needed"
+          ansible.builtin.debug:
+            msg: "NTP configuration already matches desired state."
+          when: not ntp_preview.changed
+
+    # ----- VLANs -----
+    - name: Preview VLAN changes
+      tags:
+        - never
+        - vlans
+      block:
+        - name: Combine host and group VLANs
+          ansible.builtin.set_fact:
+            device_vlans: "{{ vlans + (group_network_config.vlans | default([])) }}"
+
+        - name: "VLANs: compute changes (check mode -- no changes applied)"
+          cisco.ios.ios_vlans:
+            config: "{{ device_vlans }}"
+            state: replaced
+          register: vlan_preview
+
+        - name: "VLANs: current state (BEFORE)"
+          ansible.builtin.debug:
+            msg: "{{ vlan_preview.before | default([]) | to_nice_yaml }}"
+
+        - name: "VLANs: desired state (AFTER)"
+          ansible.builtin.debug:
+            msg: "{{ vlan_preview.after | default([]) | to_nice_yaml }}"
+
+        - name: "VLANs: CLI commands that would be sent"
+          ansible.builtin.debug:
+            msg: "{{ vlan_preview.commands }}"
+          when: vlan_preview.commands | default([]) | length > 0
+
+        - name: "VLANs: no changes needed"
+          ansible.builtin.debug:
+            msg: "VLAN configuration already matches desired state."
+          when: not vlan_preview.changed
+
+    # ----- Interfaces -----
+    - name: Preview interface changes
+      tags:
+        - never
+        - interfaces
+      block:
+        - name: "Interfaces: compute changes (check mode -- no changes applied)"
+          cisco.ios.ios_interfaces:
+            config: "{{ interfaces }}"
+            state: merged
+          register: intf_preview
+
+        - name: "Interfaces: current state (BEFORE)"
+          ansible.builtin.debug:
+            msg: "{{ intf_preview.before | default([]) | to_nice_yaml }}"
+
+        - name: "Interfaces: desired state (AFTER)"
+          ansible.builtin.debug:
+            msg: "{{ intf_preview.after | default([]) | to_nice_yaml }}"
+
+        - name: "Interfaces: CLI commands that would be sent"
+          ansible.builtin.debug:
+            msg: "{{ intf_preview.commands }}"
+          when: intf_preview.commands | default([]) | length > 0
+
+        - name: "Interfaces: no changes needed"
+          ansible.builtin.debug:
+            msg: "Interface configuration already matches desired state."
+          when: not intf_preview.changed
+
+    # ----- L3 Interfaces -----
+    - name: Preview L3 interface changes
+      tags:
+        - never
+        - l3_interfaces
+      block:
+        - name: "L3 Interfaces: compute changes (check mode -- no changes applied)"
+          cisco.ios.ios_l3_interfaces:
+            config: "{{ l3_interfaces }}"
+            state: merged
+          register: l3_preview
+
+        - name: "L3 Interfaces: current state (BEFORE)"
+          ansible.builtin.debug:
+            msg: "{{ l3_preview.before | default([]) | to_nice_yaml }}"
+
+        - name: "L3 Interfaces: desired state (AFTER)"
+          ansible.builtin.debug:
+            msg: "{{ l3_preview.after | default([]) | to_nice_yaml }}"
+
+        - name: "L3 Interfaces: CLI commands that would be sent"
+          ansible.builtin.debug:
+            msg: "{{ l3_preview.commands }}"
+          when: l3_preview.commands | default([]) | length > 0
+
+        - name: "L3 Interfaces: no changes needed"
+          ansible.builtin.debug:
+            msg: "L3 interface configuration already matches desired state."
+          when: not l3_preview.changed
+
+    # ----- SNMP -----
+    - name: Preview SNMP changes
+      tags:
+        - never
+        - snmp
+      block:
+        - name: "SNMP: compute changes (check mode -- no changes applied)"
+          cisco.ios.ios_snmp_server:
+            config: "{{ snmp_server }}"
+            state: merged
+          register: snmp_preview
+
+        - name: "SNMP: current state (BEFORE)"
+          ansible.builtin.debug:
+            msg: "{{ snmp_preview.before | default({}) | to_nice_yaml }}"
+
+        - name: "SNMP: desired state (AFTER)"
+          ansible.builtin.debug:
+            msg: "{{ snmp_preview.after | default({}) | to_nice_yaml }}"
+
+        - name: "SNMP: CLI commands that would be sent"
+          ansible.builtin.debug:
+            msg: "{{ snmp_preview.commands }}"
+          when: snmp_preview.commands | default([]) | length > 0
+
+        - name: "SNMP: no changes needed"
+          ansible.builtin.debug:
+            msg: "SNMP configuration already matches desired state."
+          when: not snmp_preview.changed
+
+    # ----- Summary -----
+    - name: Change preview summary
+      tags:
+        - always
+      ansible.builtin.debug:
+        msg: >-
+          Preview complete for {{ inventory_hostname }}.
+          This was CHECK MODE -- no changes were made to the device.
+          Review the BEFORE/AFTER/COMMANDS output above to see what
+          would change when you run without --check.
+...

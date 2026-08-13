@@ -1,0 +1,93 @@
+{# ---------------------------------------------------------------
+   This template renders the "intended" running-config for an IOS
+   device. The output must match the exact format and indentation
+   of 'show running-config' so that diff_against: intended can
+   produce a meaningful line-by-line comparison.
+
+   Feed it the same host_vars/group_vars your resource module
+   playbooks consume. Maintain this template as your golden
+   standard -- if you add a new config section to your intent
+   data, add the corresponding block here.
+   --------------------------------------------------------------- #}
+!
+hostname {{ hostname.hostname }}
+!
+{% if service is defined %}
+{% if service.password_encryption | default(false) %}
+service password-encryption
+{% endif %}
+{% if service.timestamps is defined %}
+{% for ts in service.timestamps %}
+service timestamps {{ ts.msg }} {{ ts.timestamp }}{% if ts.datetime_options is defined and ts.datetime_options.msec | default(false) %} msec{% endif %}
+
+{% endfor %}
+{% endif %}
+{% endif %}
+!
+{% if logging_global is defined and logging_global.persistent is defined %}
+logging persistent size {{ logging_global.persistent.size }} filesize {{ logging_global.persistent.filesize }}{% if logging_global.persistent.immediate | default(false) %} immediate{% endif %}
+
+{% endif %}
+!
+{% if ntp_global is defined and ntp_global.servers is defined %}
+{% for server in ntp_global.servers %}
+ntp server {{ server.server }}
+{% endfor %}
+{% endif %}
+!
+{% if l3_interfaces is defined %}
+{% for intf in l3_interfaces %}
+{% if intf.ipv4 is defined or intf.ipv6 is defined %}
+interface {{ intf.name }}
+{% if intf.ipv4 is defined %}
+{% for addr in intf.ipv4 %}
+{% if addr.address is defined %}
+ ip address {{ addr.address | regex_replace('/(\d+)$', '') }} {{ addr.address | ansible.utils.ipaddr('netmask') }}
+{% elif addr.dhcp is defined and addr.dhcp.enable | default(false) %}
+ ip address dhcp
+{% endif %}
+{% endfor %}
+{% endif %}
+!
+{% endif %}
+{% endfor %}
+{% endif %}
+!
+{% if ospfv2 is defined and ospfv2.processes is defined %}
+{% for proc in ospfv2.processes %}
+router ospf {{ proc.process_id }}
+{% if proc.router_id is defined %}
+ router-id {{ proc.router_id }}
+{% endif %}
+{% endfor %}
+{% endif %}
+!
+{% if static_routes is defined %}
+{% for route_block in static_routes %}
+{% if route_block.vrf is not defined %}
+{% for af in route_block.address_families %}
+{% for route in af.routes %}
+{% for nh in route.next_hops %}
+ip route {{ route.dest | ansible.utils.ipaddr('network') }} {{ route.dest | ansible.utils.ipaddr('netmask') }}{% if nh.interface is defined %} {{ nh.interface }}{% endif %}{% if nh.forward_router_address is defined %} {{ nh.forward_router_address }}{% endif %}
+
+{% endfor %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+!
+{% if vlans is defined %}
+{% for vlan in vlans %}
+{% if vlan.vlan_id != 1 and vlan.vlan_id < 1002 %}
+vlan {{ vlan.vlan_id }}
+ name {{ vlan.name }}
+{% if vlan.state is defined and vlan.state != 'active' %}
+ state {{ vlan.state }}
+{% endif %}
+!
+{% endif %}
+{% endfor %}
+{% endif %}
+!
+end

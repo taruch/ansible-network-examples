@@ -2,3 +2,4 @@
 collections:
   - name: ansible.network
   - name: ansible.scm
+  - name: ansible.utils

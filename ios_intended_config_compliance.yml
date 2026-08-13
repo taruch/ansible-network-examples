@@ -1,0 +1,56 @@
+---
+# Intended Config Compliance Check
+#
+# This playbook uses ios_config with diff_against: intended to compare
+# the device's running-config against a rendered "golden" intended config.
+# It makes NO changes to the device -- it only reports what is different.
+#
+# This is the Ansible equivalent of your SOP:
+#   "log in, show run, compare against what it should be"
+#
+# The intended config is rendered from a Jinja2 template that consumes the
+# same host_vars data your resource module playbooks use. This keeps a
+# single source of truth -- the host_vars ARE the intent, and the template
+# translates that intent into the CLI format the device uses.
+#
+# Usage:
+#   ansible-playbook ios_intended_config_compliance.yml
+#
+# The diff output shows:
+#   Lines prefixed with '-' exist on the device but NOT in the intended config
+#   Lines prefixed with '+' are in the intended config but NOT on the device
+#
+# In AAP/Controller:
+#   Set the job template to "Job Type: Check" for a read-only compliance scan.
+#   The diff output appears in the job stdout.
+
+- name: IOS Intended Config Compliance Check
+  hosts: cisco
+  gather_facts: false
+  connection: ansible.netcommon.network_cli
+
+  tasks:
+    - name: Render the intended configuration from template
+      ansible.builtin.template:
+        src: templates/ios_intended_config.j2
+        dest: "intended_configs/{{ inventory_hostname }}_intended.cfg"
+      delegate_to: localhost
+      connection: local
+      changed_when: false
+
+    - name: Compare running-config against intended config
+      cisco.ios.ios_config:
+        diff_against: intended
+        intended_config: "{{ lookup('file', 'intended_configs/' + inventory_hostname + '_intended.cfg') }}"
+      check_mode: true
+      diff: true
+      register: compliance_result
+
+    - name: Report compliance status
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }} is
+          {{ 'OUT OF COMPLIANCE -- differences found (see diff above)'
+             if compliance_result.changed else
+             'IN COMPLIANCE -- running-config matches intended config' }}
+...

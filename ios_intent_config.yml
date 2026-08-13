@@ -1,0 +1,274 @@
+---
+# Intent-Based Network Configuration with Pre/Post Validation
+#
+# This playbook demonstrates three levels of change visibility:
+#   1. Check mode preview  -- shows commands that WOULD be sent (no changes made)
+#   2. Apply with audit     -- captures pre/post configs and diffs them
+#   3. Git-backed audit     -- saves configs to git for historical comparison
+#
+# Usage:
+#   Preview only (no changes):
+#     ansible-playbook ios_intent_config.yml --tags ntp --check --diff
+#
+#   Apply with full pre/post audit:
+#     ansible-playbook ios_intent_config.yml --tags ntp
+#
+#   Apply and push configs to git:
+#     ansible-playbook ios_intent_config.yml --tags ntp,gitops
+
+- name: Intent-Based IOS Configuration with Pre/Post Validation
+  hosts: cisco
+  gather_facts: false
+  vars:
+    config_dir: "configs/{{ inventory_hostname }}"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+
+  tasks:
+    # ---------------------------------------------------------------
+    # Phase 1: Pre-Change Snapshot
+    # ---------------------------------------------------------------
+    - name: Pre-change snapshot
+      tags:
+        - always
+      block:
+        - name: Capture pre-change running config
+          cisco.ios.ios_command:
+            commands:
+              - show running-config
+          register: pre_running_config
+
+        - name: Gather pre-change structured facts
+          cisco.ios.ios_facts:
+            gather_network_resources:
+              - 'all'
+          register: pre_facts
+
+        - name: Store pre-change structured state
+          ansible.builtin.set_fact:
+            pre_change_resources: "{{ ansible_network_resources }}"
+
+        - name: Save pre-change config to file
+          delegate_to: localhost
+          connection: local
+          block:
+            - name: Ensure config directory exists
+              ansible.builtin.file:
+                path: "{{ config_dir }}"
+                state: directory
+                mode: '0755'
+
+            - name: Write pre-change running config
+              ansible.builtin.copy:
+                content: "{{ pre_running_config.stdout[0] }}"
+                dest: "{{ config_dir }}/pre_running_config_{{ timestamp }}.txt"
+                mode: '0644'
+
+    # ---------------------------------------------------------------
+    # Phase 2: Configuration Changes (Intent Enforcement)
+    #
+    # Each block registers its result so we can show the commands
+    # that will be (or were) sent. In --check mode, the commands
+    # are computed but NOT applied -- this is your "what will change"
+    # preview.
+    # ---------------------------------------------------------------
+    - name: Configure NTP (intent)
+      tags:
+        - never
+        - ntp
+      block:
+        - name: Combine host and group NTP configuration
+          ansible.builtin.set_fact:
+            device_ntp: "{{ ntp_global | combine(group_ntp_global | default({})) }}"
+
+        - name: Enforce NTP configuration
+          cisco.ios.ios_ntp_global:
+            config: "{{ device_ntp }}"
+            state: replaced
+          register: ntp_result
+
+        - name: Show NTP changes that were applied (or would be in check mode)
+          ansible.builtin.debug:
+            msg: >-
+              {{ 'CHECK MODE - commands that WOULD be sent:'
+                 if ansible_check_mode else
+                 'Commands sent to device:' }}
+          when: ntp_result.commands | default([]) | length > 0
+
+        - name: Display NTP commands
+          ansible.builtin.debug:
+            msg: "{{ ntp_result.commands }}"
+          when: ntp_result.commands | default([]) | length > 0
+
+        - name: Report no NTP changes needed
+          ansible.builtin.debug:
+            msg: "Device NTP config already matches desired state -- no changes needed."
+          when: ntp_result.commands | default([]) | length == 0
+
+    - name: Configure VLANs (intent)
+      tags:
+        - never
+        - vlans
+      block:
+        - name: Combine host and group VLANs
+          ansible.builtin.set_fact:
+            device_vlans: "{{ vlans + (group_network_config.vlans | default([])) }}"
+
+        - name: Enforce VLAN configuration
+          cisco.ios.ios_vlans:
+            config: "{{ device_vlans }}"
+            state: replaced
+          register: vlan_result
+
+        - name: Show VLAN changes
+          ansible.builtin.debug:
+            msg: >-
+              {{ 'CHECK MODE - ' if ansible_check_mode else '' }}VLAN commands:
+              {{ vlan_result.commands }}
+          when: vlan_result.commands | default([]) | length > 0
+
+    - name: Configure interfaces (intent)
+      tags:
+        - never
+        - interfaces
+      block:
+        - name: Enforce interface configuration
+          cisco.ios.ios_interfaces:
+            config: "{{ interfaces }}"
+            state: merged
+          register: intf_result
+
+        - name: Show interface changes
+          ansible.builtin.debug:
+            msg: >-
+              {{ 'CHECK MODE - ' if ansible_check_mode else '' }}Interface commands:
+              {{ intf_result.commands }}
+          when: intf_result.commands | default([]) | length > 0
+
+    - name: Configure L3 interfaces (intent)
+      tags:
+        - never
+        - l3_interfaces
+      block:
+        - name: Enforce L3 interface configuration
+          cisco.ios.ios_l3_interfaces:
+            config: "{{ l3_interfaces }}"
+            state: merged
+          register: l3_result
+
+        - name: Show L3 interface changes
+          ansible.builtin.debug:
+            msg: >-
+              {{ 'CHECK MODE - ' if ansible_check_mode else '' }}L3 commands:
+              {{ l3_result.commands }}
+          when: l3_result.commands | default([]) | length > 0
+
+    - name: Configure SNMP (intent)
+      tags:
+        - never
+        - snmp
+      block:
+        - name: Enforce SNMP configuration
+          cisco.ios.ios_snmp_server:
+            config: "{{ snmp_server }}"
+            state: merged
+          register: snmp_result
+
+        - name: Show SNMP changes
+          ansible.builtin.debug:
+            msg: >-
+              {{ 'CHECK MODE - ' if ansible_check_mode else '' }}SNMP commands:
+              {{ snmp_result.commands }}
+          when: snmp_result.commands | default([]) | length > 0
+
+    # ---------------------------------------------------------------
+    # Phase 3: Post-Change Validation and Diff
+    # (skipped in check mode since nothing actually changed)
+    # ---------------------------------------------------------------
+    - name: Post-change validation
+      tags:
+        - always
+      when: not ansible_check_mode
+      block:
+        - name: Capture post-change running config
+          cisco.ios.ios_command:
+            commands:
+              - show running-config
+          register: post_running_config
+
+        - name: Gather post-change structured facts
+          cisco.ios.ios_facts:
+            gather_network_resources:
+              - 'all'
+
+        - name: Store post-change structured state
+          ansible.builtin.set_fact:
+            post_change_resources: "{{ ansible_network_resources }}"
+
+        - name: Save post-change config to file
+          delegate_to: localhost
+          connection: local
+          ansible.builtin.copy:
+            content: "{{ post_running_config.stdout[0] }}"
+            dest: "{{ config_dir }}/post_running_config_{{ timestamp }}.txt"
+            mode: '0644'
+
+        - name: Compare pre/post structured config (resource-level diff)
+          ansible.utils.fact_diff:
+            before: "{{ pre_change_resources | to_nice_yaml }}"
+            after: "{{ post_change_resources | to_nice_yaml }}"
+          register: config_diff
+
+        - name: Show structured config diff
+          ansible.builtin.debug:
+            msg: "{{ config_diff.diff_lines }}"
+          when: config_diff.diff_lines | length > 0
+
+        - name: Report no differences found
+          ansible.builtin.debug:
+            msg: "Pre and post structured configs are identical -- no drift detected."
+          when: config_diff.diff_lines | length == 0
+
+    # ---------------------------------------------------------------
+    # Phase 4: Save to Git (optional audit trail)
+    # ---------------------------------------------------------------
+    - name: GitOps audit trail
+      tags:
+        - gitops
+        - never
+      when: not ansible_check_mode
+      connection: local
+      delegate_to: localhost
+      block:
+        - name: Retrieve audit repository
+          ansible.scm.git_retrieve:
+            origin:
+              url: "{{ git_url }}"
+              token: "{{ github_token }}"
+          register: repository
+
+        - name: Save running config to git repo
+          ansible.builtin.copy:
+            content: "{{ post_running_config.stdout[0] }}"
+            dest: "{{ repository['path'] }}/configs/{{ inventory_hostname }}/running_config.txt"
+            mode: '0644'
+          register: git_config_result
+
+        - name: Save structured facts to git repo
+          ansible.builtin.copy:
+            content: "{{ post_change_resources | to_nice_yaml }}"
+            dest: "{{ repository['path'] }}/host_vars/{{ inventory_hostname }}"
+            mode: '0644'
+          register: git_facts_result
+
+        - name: Publish changes to git
+          when: git_config_result.changed or git_facts_result.changed
+          ansible.scm.git_publish:
+            commit:
+              message: "Config update for {{ inventory_hostname }} at {{ timestamp }}"
+            include: "--all"
+            path: "{{ repository['path'] }}"
+            user:
+              name: "Todd Ruch"
+              email: truch@redhat.com
+            token: "{{ github_token }}"
+...
