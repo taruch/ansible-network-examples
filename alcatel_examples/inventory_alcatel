@@ -1,0 +1,73 @@
+# ============================================================
+# Alcatel OmniSwitch Inventory
+#
+# Group hierarchy:
+#   alcatel           <- all Alcatel devices (connection vars)
+#     alcatel_edge    <- edge switches (STP 32768, DHCP snooping, BPDU guard)
+#     alcatel_mas     <- MAS switches  (STP 28672)
+#     alcatel_mds     <- MDS switches  (STP 24576)
+#   campus_east       <- Campus East site (NPS: CE primary, CW secondary)
+#   campus_west       <- Campus West (NPS: CW primary, CE secondary)
+#
+# A device belongs to BOTH a function group AND a site group.
+# Example: ce-edge-sw01 is in alcatel_edge AND campus_east.
+# ============================================================
+
+# ----- Function groups -----
+[alcatel_edge:children]
+campus_east_edge
+campus_west_edge
+
+[alcatel_mas:children]
+campus_east_mas
+campus_west_mas
+
+[alcatel_mds:children]
+campus_east_mds
+campus_west_mds
+
+# ----- Site groups -----
+[campus_east:children]
+campus_east_edge
+campus_east_mas
+campus_east_mds
+
+[campus_west:children]
+campus_west_edge
+campus_west_mas
+campus_west_mds
+
+# ----- Parent group for all Alcatel devices -----
+[alcatel:children]
+alcatel_edge
+alcatel_mas
+alcatel_mds
+
+# ============================================================
+# Campus East devices
+# ============================================================
+[campus_east_edge]
+ce-edge-sw01  ansible_host=10.1.1.10
+ce-edge-sw02  ansible_host=10.1.1.11
+ce-edge-sw03  ansible_host=10.1.1.12
+ce-edge-sw04  ansible_host=10.1.1.13
+
+[campus_east_mas]
+ce-mas-sw01   ansible_host=10.1.1.20
+ce-mas-sw02   ansible_host=10.1.1.21
+
+[campus_east_mds]
+ce-mds-sw01   ansible_host=10.1.1.30
+
+# ============================================================
+# Campus West devices
+# ============================================================
+[campus_west_edge]
+cw-edge-sw01  ansible_host=10.2.1.10
+cw-edge-sw02  ansible_host=10.2.1.11
+
+[campus_west_mas]
+cw-mas-sw01   ansible_host=10.2.1.20
+
+[campus_west_mds]
+cw-mds-sw01   ansible_host=10.2.1.30

@@ -1,0 +1,119 @@
+---
+# DHCP Snooping -- Edge Switches
+#
+# Uses ale.aos8.aos8_command for device state discovery and aos8_config
+# for applying changes. Automatically detects uplinks via LLDP neighbors
+# and trusts uplink ports plus LAG interfaces.
+#
+# Usage:
+#   Preview:  ansible-playbook alcatel_dhcp_snooping.yml -i inventory_alcatel --check
+#   Apply:    ansible-playbook alcatel_dhcp_snooping.yml -i inventory_alcatel
+
+- name: Configure DHCP Snooping on Edge Switches
+  hosts: alcatel_edge
+  gather_facts: false
+
+  tasks:
+    # -----------------------------------------------------------------
+    # PHASE 1: Discover network topology via LLDP
+    # -----------------------------------------------------------------
+    - name: Gather device state for DHCP snooping decisions
+      ale.aos8.aos8_command:
+        commands:
+          - show lldp remote-system
+          - show linkagg
+          - show ip helper dhcp-snooping
+      register: discovery
+
+    - name: Store discovery results
+      ansible.builtin.set_fact:
+        lldp_output: "{{ discovery.stdout[0] }}"
+        linkagg_output: "{{ discovery.stdout[1] }}"
+        dhcp_snooping_enabled: "{{ discovery.stdout[2] is regex('(?i)DHCP Snooping.*enabled') }}"
+
+    # -----------------------------------------------------------------
+    # PHASE 2: Identify trusted ports
+    # -----------------------------------------------------------------
+    - name: Parse LLDP neighbors to find uplink ports
+      ansible.builtin.set_fact:
+        uplink_ports: >-
+          {{ lldp_output.split('\n')
+             | select('regex', '(?i)(bridge|router)')
+             | map('regex_search', '(\d+/\d+/\d+)', '\1')
+             | select('string')
+             | map('first')
+             | unique
+             | list }}
+
+    - name: Parse LAG interfaces
+      ansible.builtin.set_fact:
+        lag_interfaces: >-
+          {{ linkagg_output.split('\n')
+             | select('regex', '^\s*\d+')
+             | map('regex_search', '^\s*(\d+)', '\1')
+             | select('string')
+             | map('first')
+             | unique
+             | list }}
+
+    # -----------------------------------------------------------------
+    # PHASE 3: Display plan
+    # -----------------------------------------------------------------
+    - name: Display DHCP snooping plan
+      ansible.builtin.debug:
+        msg:
+          - "Host: {{ inventory_hostname }}"
+          - "DHCP Snooping currently: {{ 'enabled' if dhcp_snooping_enabled else 'DISABLED -- will enable' }}"
+          - "Protected VLANs: {{ dhcp_snooping_vlans }}"
+          - "Uplink ports detected (will trust): {{ uplink_ports | default([]) }}"
+          - "LAG interfaces detected (will trust): {{ lag_interfaces | default([]) }}"
+
+    # -----------------------------------------------------------------
+    # PHASE 4: Build and apply configuration
+    # -----------------------------------------------------------------
+    - name: Build DHCP snooping config lines
+      ansible.builtin.set_fact:
+        dhcp_snooping_lines: >-
+          {{
+            ['ip helper dhcp-snooping enable']
+            + dhcp_snooping_vlans | map('regex_replace', '^(.*)$', 'ip helper dhcp-snooping vlan \1') | list
+            + uplink_ports | default([]) | map('regex_replace', '^(.*)$', 'ip helper dhcp-snooping port \1 trust') | list
+            + lag_interfaces | default([]) | map('regex_replace', '^(.*)$', 'ip helper dhcp-snooping linkagg \1 trust') | list
+          }}
+
+    - name: Show configuration lines
+      ansible.builtin.debug:
+        msg: "{{ dhcp_snooping_lines }}"
+
+    - name: Apply DHCP snooping configuration
+      ale.aos8.aos8_config:
+        lines: "{{ dhcp_snooping_lines }}"
+      register: dhcp_change
+
+    - name: Display commands applied
+      ansible.builtin.debug:
+        msg: "{{ dhcp_change.commands }}"
+      when: dhcp_change.commands | default([]) | length > 0
+
+    # -----------------------------------------------------------------
+    # PHASE 5: Verify
+    # -----------------------------------------------------------------
+    - name: Verify DHCP snooping is active
+      when:
+        - not ansible_check_mode
+        - dhcp_change.changed | default(false)
+      ale.aos8.aos8_command:
+        commands:
+          - show ip helper dhcp-snooping
+      register: post_dhcp
+
+    - name: Assert DHCP snooping is enabled
+      when:
+        - not ansible_check_mode
+        - dhcp_change.changed | default(false)
+      ansible.builtin.assert:
+        that:
+          - post_dhcp.stdout[0] is regex('(?i)enabled')
+        fail_msg: "DHCP snooping verification failed on {{ inventory_hostname }}"
+        success_msg: "DHCP snooping enabled and trusted ports configured on {{ inventory_hostname }}"
+...

@@ -1,0 +1,132 @@
+---
+# Digital Diagnostic Monitoring (DDM)
+#
+# Uses ale.aos8.aos8_command for transceiver/DDM discovery and aos8_config
+# to enable DDM and DDM traps on ports that have transceivers but lack DDM.
+#
+# Usage:
+#   Audit only:  ansible-playbook alcatel_ddm.yml -i inventory_alcatel --check
+#   Apply:       ansible-playbook alcatel_ddm.yml -i inventory_alcatel
+
+- name: Digital Diagnostic Monitoring (DDM) Enforcement
+  hosts: alcatel
+  gather_facts: false
+
+  tasks:
+    # -----------------------------------------------------------------
+    # PHASE 1: Discover transceiver ports and DDM status
+    # -----------------------------------------------------------------
+    - name: Gather transceiver and DDM state
+      ale.aos8.aos8_command:
+        commands:
+          - show interfaces transceiver
+          - show interfaces ddm
+      register: ddm_discovery
+
+    - name: Identify ports with transceivers installed
+      ansible.builtin.set_fact:
+        transceiver_ports: >-
+          {{ ddm_discovery.stdout[0].split('\n')
+             | select('regex', '^\s*\d+/\d+/\d+')
+             | map('regex_search', '(\d+/\d+/\d+)', '\1')
+             | select('string')
+             | map('first')
+             | unique
+             | list }}
+
+    - name: Identify ports where DDM is already enabled
+      ansible.builtin.set_fact:
+        ddm_enabled_ports: >-
+          {{ ddm_discovery.stdout[1].split('\n')
+             | select('regex', '(?i)enabled')
+             | map('regex_search', '(\d+/\d+/\d+)', '\1')
+             | select('string')
+             | map('first')
+             | unique
+             | list }}
+
+    - name: Calculate ports needing DDM
+      ansible.builtin.set_fact:
+        ddm_needed_ports: "{{ transceiver_ports | difference(ddm_enabled_ports) | list }}"
+
+    # -----------------------------------------------------------------
+    # PHASE 2: Report status
+    # -----------------------------------------------------------------
+    - name: Display DDM audit results
+      ansible.builtin.debug:
+        msg:
+          - "Host: {{ inventory_hostname }}"
+          - "Ports with transceivers:   {{ transceiver_ports | length }}"
+          - "Ports with DDM enabled:    {{ ddm_enabled_ports | length }}"
+          - "Ports needing DDM:         {{ ddm_needed_ports | length }}"
+          - "{{ 'Ports to configure: ' + (ddm_needed_ports | join(', ')) if ddm_needed_ports | length > 0 else 'All transceiver ports have DDM -- compliant' }}"
+
+    # -----------------------------------------------------------------
+    # PHASE 3: Enable DDM
+    # -----------------------------------------------------------------
+    - name: Build DDM config lines
+      when: ddm_needed_ports | length > 0
+      ansible.builtin.set_fact:
+        ddm_lines: >-
+          {{
+            ddm_needed_ports
+            | map('regex_replace', '^(.*)$', 'interfaces \1 ddm enable')
+            | list
+            +
+            ddm_needed_ports
+            | map('regex_replace', '^(.*)$', 'interfaces \1 ddm-trap enable')
+            | list
+          }}
+
+    - name: Show DDM commands
+      when: ddm_needed_ports | length > 0
+      ansible.builtin.debug:
+        msg: "{{ ddm_lines }}"
+
+    - name: Apply DDM configuration
+      when: ddm_needed_ports | length > 0
+      ale.aos8.aos8_config:
+        lines: "{{ ddm_lines }}"
+      register: ddm_change
+
+    - name: Display commands applied
+      ansible.builtin.debug:
+        msg: "{{ ddm_change.commands }}"
+      when: ddm_change.commands | default([]) | length > 0
+
+    # -----------------------------------------------------------------
+    # PHASE 4: Verify
+    # -----------------------------------------------------------------
+    - name: Verify DDM is now enabled
+      when:
+        - ddm_change.changed | default(false)
+        - not ansible_check_mode
+      ale.aos8.aos8_command:
+        commands:
+          - show interfaces ddm
+      register: post_ddm
+
+    - name: Parse post-change DDM-enabled ports
+      when:
+        - ddm_change.changed | default(false)
+        - not ansible_check_mode
+      ansible.builtin.set_fact:
+        post_ddm_enabled: >-
+          {{ post_ddm.stdout[0].split('\n')
+             | select('regex', '(?i)enabled')
+             | map('regex_search', '(\d+/\d+/\d+)', '\1')
+             | select('string')
+             | map('first')
+             | unique
+             | list }}
+
+    - name: Assert all transceiver ports now have DDM
+      when:
+        - ddm_change.changed | default(false)
+        - not ansible_check_mode
+      ansible.builtin.assert:
+        that:
+          - (transceiver_ports | difference(post_ddm_enabled)) | length == 0
+        fail_msg: "DDM still disabled on: {{ transceiver_ports | difference(post_ddm_enabled) | join(', ') }}"
+        success_msg: "DDM enabled on all {{ transceiver_ports | length }} transceiver ports"
+...

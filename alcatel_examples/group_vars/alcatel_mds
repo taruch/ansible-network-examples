@@ -1,0 +1,4 @@
+---
+# MDS switches: STP priority 24576
+stp_bridge_priority: 24576
+device_role: "mds"

@@ -1,0 +1,98 @@
+---
+# NPS (RADIUS) Configuration -- Site-Aware
+#
+# Uses the ale.aos8.aos8_radius_servers resource module for declarative
+# RADIUS server management with full before/after/commands visibility.
+#
+# Site-aware config via group_vars:
+#   Campus East: primary = CE-NPS-01, secondary = CW-NPS-01
+#   Campus West: primary = CW-NPS-01, secondary = CE-NPS-01
+#
+# Usage:
+#   Preview (check mode shows before/after/commands):
+#     ansible-playbook alcatel_nps_config.yml -i inventory_alcatel --check
+#   Apply:
+#     ansible-playbook alcatel_nps_config.yml -i inventory_alcatel
+#   Gather current state only:
+#     ansible-playbook alcatel_nps_config.yml -i inventory_alcatel --tags gather
+
+- name: Configure NPS/RADIUS Servers by Site
+  hosts: alcatel
+  gather_facts: false
+
+  tasks:
+    # -----------------------------------------------------------------
+    # Gather current RADIUS state (always runs)
+    # -----------------------------------------------------------------
+    - name: Gather current RADIUS server configuration
+      tags:
+        - always
+      ale.aos8.aos8_radius_servers:
+        state: gathered
+      register: current_radius
+
+    - name: Display current RADIUS servers
+      tags:
+        - always
+      ansible.builtin.debug:
+        msg: "Current RADIUS config: {{ current_radius.gathered | default([]) | to_nice_yaml }}"
+        verbosity: 1
+
+    # -----------------------------------------------------------------
+    # Enforce intended RADIUS configuration
+    # -----------------------------------------------------------------
+    - name: Display intended NPS configuration
+      ansible.builtin.debug:
+        msg:
+          - "Host: {{ inventory_hostname }} ({{ site_name }})"
+          - "Primary NPS:   {{ nps_primary.name }} ({{ nps_primary.host }})"
+          - "Secondary NPS: {{ nps_secondary.name }} ({{ nps_secondary.host }})"
+
+    - name: Enforce RADIUS server configuration
+      ale.aos8.aos8_radius_servers:
+        config:
+          - host: "{{ nps_primary.host }}"
+            key: "{{ vault_radius_key | default('ChangeMe') }}"
+            acct_port: "{{ nps_primary.acct_port }}"
+          - host: "{{ nps_secondary.host }}"
+            key: "{{ vault_radius_key | default('ChangeMe') }}"
+            acct_port: "{{ nps_secondary.acct_port }}"
+        state: replaced
+      register: radius_result
+
+    - name: "RADIUS: current state (BEFORE)"
+      ansible.builtin.debug:
+        msg: "{{ radius_result.before | default([]) | to_nice_yaml }}"
+      when: radius_result.changed | default(false)
+
+    - name: "RADIUS: desired state (AFTER)"
+      ansible.builtin.debug:
+        msg: "{{ radius_result.after | default([]) | to_nice_yaml }}"
+      when: radius_result.changed | default(false)
+
+    - name: "RADIUS: commands sent (or that would be sent in check mode)"
+      ansible.builtin.debug:
+        msg: "{{ radius_result.commands }}"
+      when: radius_result.commands | default([]) | length > 0
+
+    - name: "RADIUS: no changes needed"
+      ansible.builtin.debug:
+        msg: "RADIUS config already matches intended state for {{ site_name }}."
+      when: not radius_result.changed | default(false)
+
+    # -----------------------------------------------------------------
+    # Configure AAA authentication order (not covered by resource module)
+    # -----------------------------------------------------------------
+    - name: Set AAA authentication to use RADIUS servers in correct order
+      ale.aos8.aos8_config:
+        lines:
+          - >-
+            aaa authentication 802.1x default
+            "{{ nps_primary.name }}" "{{ nps_secondary.name }}"
+      register: aaa_result
+
+    - name: Display AAA commands
+      ansible.builtin.debug:
+        msg: "{{ aaa_result.commands }}"
+      when: aaa_result.commands | default([]) | length > 0
+...

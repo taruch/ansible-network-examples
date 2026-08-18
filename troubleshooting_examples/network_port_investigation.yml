@@ -1,0 +1,174 @@
+---
+# Port Investigation -- LLDP Neighbors, LACP Bundles, and VLAN Tagging
+#
+# Queries a switch and provides a unified view of:
+#   1. All LLDP neighbors (who is connected to which port)
+#   2. Whether each port is a member of an LACP bundle
+#   3. If so, which bundle (port-channel / linkagg)
+#   4. All VLANs tagged on the port or its LACP bundle
+#
+# Uses resource module facts (ansible_network_resources) which provide
+# the same structured data format regardless of vendor. Only the facts
+# gathering step is platform-specific; all analysis is platform-independent.
+#
+# Supports: Cisco IOS, Cisco NXOS, Alcatel AOS8
+#
+# Usage:
+#   Single switch:   ansible-playbook network_port_investigation.yml --limit nxosv1
+#   All switches:    ansible-playbook network_port_investigation.yml
+#   Site scope:      ansible-playbook network_port_investigation.yml --limit campus_east
+#   With Alcatel:    ansible-playbook network_port_investigation.yml -i inventory -i alcatel_examples/inventory_alcatel
+
+- name: Port Investigation -- LLDP, LACP, and VLANs
+  hosts: all
+  gather_facts: false
+  connection: ansible.netcommon.network_cli
+
+  tasks:
+    # =================================================================
+    # PHASE 1: Gather structured facts (platform-specific)
+    #
+    # After this phase, ansible_network_resources contains the same
+    # keys regardless of platform:
+    #   - lldp_interfaces  (LLDP neighbor data)
+    #   - lag_interfaces    (LAG/port-channel membership)
+    #   - l2_interfaces     (VLAN assignments per port)
+    # =================================================================
+
+    - name: Gather network resource facts (IOS)
+      when: ansible_network_os is match('cisco.ios')
+      cisco.ios.ios_facts:
+        gather_network_resources:
+          - lldp_interfaces
+          - lag_interfaces
+          - l2_interfaces
+        gather_subset:
+          - "!all"
+
+    - name: Gather network resource facts (NXOS)
+      when: ansible_network_os is match('cisco.nxos')
+      cisco.nxos.nxos_facts:
+        gather_network_resources:
+          - lldp_interfaces
+          - lag_interfaces
+          - l2_interfaces
+        gather_subset:
+          - "!all"
+
+    - name: Gather network resource facts (AOS8)
+      when: ansible_network_os is match('ale.aos8')
+      ale.aos8.aos8_facts:
+        gather_network_resources:
+          - l2_interfaces
+        gather_subset:
+          - "!all"
+
+    - name: Gather LLDP via CLI for AOS8 (no LLDP resource module)
+      when: ansible_network_os is match('ale.aos8')
+      ale.aos8.aos8_command:
+        commands:
+          - show lldp remote-system
+      register: aos8_lldp_raw
+
+    # =================================================================
+    # PHASE 2: Build lookup structures (platform-independent)
+    #
+    # These set_fact tasks normalize the data into simple lookup
+    # dictionaries keyed by port name.
+    # =================================================================
+
+    - name: Build LAG membership lookup (port -> LAG name)
+      ansible.builtin.set_fact:
+        lag_membership: >-
+          {% set result = {} %}
+          {% for lag in ansible_network_resources.lag_interfaces | default([]) %}
+          {% for member in lag.members | default([]) %}
+          {% set _ = result.update({member.member: lag.name}) %}
+          {% endfor %}
+          {% endfor %}
+          {{ result }}
+
+    - name: Build VLAN lookup (port -> VLAN info)
+      ansible.builtin.set_fact:
+        vlan_by_port: >-
+          {% set result = {} %}
+          {% for intf in ansible_network_resources.l2_interfaces | default([]) %}
+          {% set vlans = [] %}
+          {% if intf.access is defined and intf.access.vlan is defined %}
+          {% set _ = vlans.append('access:' + intf.access.vlan | string) %}
+          {% endif %}
+          {% if intf.trunk is defined %}
+          {% if intf.trunk.native_vlan is defined %}
+          {% set _ = vlans.append('native:' + intf.trunk.native_vlan | string) %}
+          {% endif %}
+          {% for v in intf.trunk.allowed_vlans | default([]) %}
+          {% set _ = vlans.append('tagged:' + v | string) %}
+          {% endfor %}
+          {% endif %}
+          {% if vlans | length > 0 %}
+          {% set _ = result.update({intf.name: vlans}) %}
+          {% endif %}
+          {% endfor %}
+          {{ result }}
+
+    # =================================================================
+    # PHASE 3: LLDP Neighbor Report with LACP and VLAN cross-reference
+    # =================================================================
+
+    - name: Display LLDP neighbors with LACP and VLAN details
+      ansible.builtin.debug:
+        msg: |
+          ============================================================
+          PORT INVESTIGATION: {{ inventory_hostname }}
+          Platform: {{ ansible_network_os | default('unknown') }}
+          ============================================================
+
+          LLDP NEIGHBORS
+          ============================================================
+          {% for neighbor in ansible_network_resources.lldp_interfaces | default([]) %}
+          {% set port = neighbor.name %}
+          {% set lag_name = lag_membership.get(port, '') %}
+          {% set vlan_info = vlan_by_port.get(port, []) %}
+          {% set lag_vlan_info = vlan_by_port.get(lag_name, []) if lag_name else [] %}
+            Port: {{ port }}
+              Neighbor: {{ neighbor.receive | default(neighbor.neighbors | default([])) }}
+          {% if lag_name %}
+              LACP Bundle: {{ lag_name }}
+          {% else %}
+              LACP Bundle: (not a LAG member)
+          {% endif %}
+          {% if vlan_info | length > 0 %}
+              VLANs on port: {{ vlan_info | join(', ') }}
+          {% endif %}
+          {% if lag_vlan_info | length > 0 %}
+              VLANs on bundle {{ lag_name }}: {{ lag_vlan_info | join(', ') }}
+          {% endif %}
+            ------------------------------------------------------------
+          {% endfor %}
+          {% if ansible_network_resources.lldp_interfaces | default([]) | length == 0 %}
+            (No LLDP neighbors found)
+          {% endif %}
+
+          ALL LAG INTERFACES
+          ============================================================
+          {% for lag in ansible_network_resources.lag_interfaces | default([]) %}
+            {{ lag.name }}:
+              Members: {{ lag.members | default([]) | map(attribute='member') | join(', ') | default('(none)') }}
+              VLANs:  {{ vlan_by_port.get(lag.name, ['(none)']) | join(', ') }}
+          {% endfor %}
+          {% if ansible_network_resources.lag_interfaces | default([]) | length == 0 %}
+            (No LAG interfaces configured)
+          {% endif %}
+
+    # =================================================================
+    # PHASE 4: Quick summary stats
+    # =================================================================
+
+    - name: Port statistics summary
+      ansible.builtin.debug:
+        msg:
+          - "{{ inventory_hostname }} summary:"
+          - "  LLDP neighbors:   {{ ansible_network_resources.lldp_interfaces | default([]) | length }}"
+          - "  LAG interfaces:   {{ ansible_network_resources.lag_interfaces | default([]) | length }}"
+          - "  L2 ports:         {{ ansible_network_resources.l2_interfaces | default([]) | length }}"
+...

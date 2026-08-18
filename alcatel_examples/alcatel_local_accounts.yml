@@ -1,0 +1,147 @@
+---
+# Local Account Management
+#
+# Uses ale.aos8.aos8_command for account discovery and aos8_config for
+# account changes. Three capabilities:
+#   1. Create missing approved accounts
+#   2. Remove unauthorized accounts
+#   3. Rotate passwords (--tags rotate)
+#
+# The approved account list is in group_vars/alcatel.
+# Passwords MUST be stored in Ansible Vault.
+#
+# Usage:
+#   Audit only:        ansible-playbook alcatel_local_accounts.yml -i inventory_alcatel --check
+#   Enforce accounts:  ansible-playbook alcatel_local_accounts.yml -i inventory_alcatel
+#   Rotate passwords:  ansible-playbook alcatel_local_accounts.yml -i inventory_alcatel --tags all,rotate
+
+- name: Local Account Management
+  hosts: alcatel
+  gather_facts: false
+
+  tasks:
+    # -----------------------------------------------------------------
+    # PHASE 1: Discover current accounts
+    # -----------------------------------------------------------------
+    - name: Capture current local user accounts
+      ale.aos8.aos8_command:
+        commands:
+          - show user
+      register: user_output
+
+    - name: Parse existing usernames from device
+      ansible.builtin.set_fact:
+        existing_users: >-
+          {{ user_output.stdout[0].split('\n')
+             | select('regex', '(?i)User\s+name\s*=')
+             | map('regex_search', '(?i)User\s+name\s*=\s*(\S+)', '\1')
+             | select('string')
+             | map('first')
+             | list }}
+
+    - name: Build approved username list
+      ansible.builtin.set_fact:
+        approved_usernames: "{{ approved_local_accounts | map(attribute='username') | list }}"
+
+    # -----------------------------------------------------------------
+    # PHASE 2: Identify gaps and violations
+    # -----------------------------------------------------------------
+    - name: Identify missing and unauthorized accounts
+      ansible.builtin.set_fact:
+        missing_accounts: "{{ approved_usernames | difference(existing_users) }}"
+        unauthorized_accounts: "{{ existing_users | difference(approved_usernames) }}"
+
+    - name: Display account audit results
+      ansible.builtin.debug:
+        msg:
+          - "Host: {{ inventory_hostname }}"
+          - "Existing accounts: {{ existing_users }}"
+          - "Approved accounts: {{ approved_usernames }}"
+          - "Missing (will create):      {{ missing_accounts }}"
+          - "Unauthorized (will remove): {{ unauthorized_accounts }}"
+
+    # -----------------------------------------------------------------
+    # PHASE 3: Create missing approved accounts
+    # -----------------------------------------------------------------
+    - name: Create missing approved accounts
+      when: missing_accounts | length > 0
+      ale.aos8.aos8_config:
+        lines:
+          - "user {{ item.username }} password {{ item.password }} {{ item.access }}"
+      loop: "{{ approved_local_accounts | selectattr('username', 'in', missing_accounts) | list }}"
+      loop_control:
+        label: "{{ item.username }}"
+      register: create_result
+      no_log: true
+
+    # -----------------------------------------------------------------
+    # PHASE 4: Remove unauthorized accounts
+    # -----------------------------------------------------------------
+    - name: Remove unauthorized accounts
+      when: unauthorized_accounts | length > 0
+      ale.aos8.aos8_config:
+        lines:
+          - "no user {{ item }}"
+      loop: "{{ unauthorized_accounts }}"
+      register: remove_result
+
+    # -----------------------------------------------------------------
+    # PHASE 5: Password rotation (only with --tags rotate)
+    # -----------------------------------------------------------------
+    - name: Rotate passwords on all approved accounts
+      tags:
+        - never
+        - rotate
+      ale.aos8.aos8_config:
+        lines:
+          - "user {{ item.username }} password {{ item.password }} {{ item.access }}"
+      loop: "{{ approved_local_accounts }}"
+      loop_control:
+        label: "{{ item.username }}"
+      register: rotate_result
+      no_log: true
+
+    - name: Report password rotation
+      tags:
+        - never
+        - rotate
+      ansible.builtin.debug:
+        msg: "Passwords rotated for {{ approved_usernames | join(', ') }} on {{ inventory_hostname }}"
+
+    # -----------------------------------------------------------------
+    # PHASE 6: Verify
+    # -----------------------------------------------------------------
+    - name: Verify account state
+      when: not ansible_check_mode
+      ale.aos8.aos8_command:
+        commands:
+          - show user
+      register: post_users
+
+    - name: Parse post-change user list
+      when: not ansible_check_mode
+      ansible.builtin.set_fact:
+        final_users: >-
+          {{ post_users.stdout[0].split('\n')
+             | select('regex', '(?i)User\s+name\s*=')
+             | map('regex_search', '(?i)User\s+name\s*=\s*(\S+)', '\1')
+             | select('string')
+             | map('first')
+             | list }}
+
+    - name: Assert all approved accounts exist
+      when: not ansible_check_mode
+      ansible.builtin.assert:
+        that:
+          - (approved_usernames | difference(final_users)) | length == 0
+        fail_msg: "Missing accounts after remediation: {{ approved_usernames | difference(final_users) }}"
+        success_msg: "All approved accounts present: {{ approved_usernames }}"
+
+    - name: Assert no unauthorized accounts remain
+      when: not ansible_check_mode
+      ansible.builtin.assert:
+        that:
+          - (final_users | difference(approved_usernames)) | length == 0
+        fail_msg: "Unauthorized accounts still present: {{ final_users | difference(approved_usernames) }}"
+        success_msg: "No unauthorized accounts on {{ inventory_hostname }}"
+...

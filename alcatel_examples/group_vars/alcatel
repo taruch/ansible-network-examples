@@ -1,0 +1,31 @@
+---
+ansible_connection: ansible.netcommon.network_cli
+ansible_network_os: ale.aos8.aos8
+
+# AOS8 collection-specific: auto write-memory after changes
+ansible_aos_flash_synchro_flag: true
+ansible_aos_write_memory_flash: true
+
+# Approved local accounts (used by alcatel_local_accounts.yml)
+# Passwords should be vaulted -- shown as vault references here
+approved_local_accounts:
+  - username: admin
+    password: "{{ vault_admin_password }}"
+    access: "read-write all"
+  - username: netops
+    password: "{{ vault_netops_password }}"
+    access: "read-write all"
+  - username: monitor
+    password: "{{ vault_monitor_password }}"
+    access: "read-only all"
+
+# DHCP snooping VLANs to protect (used by alcatel_dhcp_snooping.yml)
+dhcp_snooping_vlans:
+  - 10
+  - 20
+  - 30
+  - 40
+  - 50
+
+# Firmware targets (used by upgrade_os6860e.yml)
+target_firmware_version: "8.9.R03.045"

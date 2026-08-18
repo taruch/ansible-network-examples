@@ -1,0 +1,105 @@
+---
+# STP Blocking Port Report
+#
+# Queries all network devices and reports ports in Spanning Tree Blocking
+# state. Use --limit to scope by building, site, device type, or any
+# inventory group.
+#
+# Supports: Cisco IOS, Cisco NXOS, Alcatel AOS8
+#
+# Usage:
+#   All devices:          ansible-playbook network_stp_blocking.yml
+#   One site:             ansible-playbook network_stp_blocking.yml --limit campus_east
+#   One device type:      ansible-playbook network_stp_blocking.yml --limit alcatel_edge
+#   Single switch:        ansible-playbook network_stp_blocking.yml --limit ce-edge-sw01
+#   Cisco only:           ansible-playbook network_stp_blocking.yml --limit 'nexus:cisco'
+#   With Alcatel inv:     ansible-playbook network_stp_blocking.yml -i inventory -i alcatel_examples/inventory_alcatel
+
+- name: STP Blocking Port Report
+  hosts: all
+  gather_facts: false
+  connection: ansible.netcommon.network_cli
+
+  tasks:
+    # -----------------------------------------------------------------
+    # Gather STP state (platform-specific commands, common output)
+    # -----------------------------------------------------------------
+    - name: Query STP blocked ports (IOS)
+      when: ansible_network_os is match('cisco.ios')
+      cisco.ios.ios_command:
+        commands:
+          - show spanning-tree blockedports
+          - show spanning-tree summary
+      register: stp_raw
+
+    - name: Query STP blocked ports (NXOS)
+      when: ansible_network_os is match('cisco.nxos')
+      cisco.nxos.nxos_command:
+        commands:
+          - show spanning-tree blockedports
+          - show spanning-tree summary
+      register: stp_raw
+
+    - name: Query STP blocked ports (AOS8)
+      when: ansible_network_os is match('ale.aos8')
+      ale.aos8.aos8_command:
+        commands:
+          - show spantree ports blocked
+      register: stp_raw
+
+    # -----------------------------------------------------------------
+    # Parse into common format
+    # -----------------------------------------------------------------
+    - name: Parse blocked port entries
+      ansible.builtin.set_fact:
+        blocked_ports: >-
+          {{ stp_raw.stdout[0].split('\n')
+             | select('regex', '(?i)(VLAN|vlan|Vlan)\d+\s+\S+')
+             | list }}
+        stp_summary: "{{ stp_raw.stdout[1] | default('') }}"
+      when:
+        - stp_raw is defined
+        - stp_raw.stdout is defined
+
+    # -----------------------------------------------------------------
+    # Report
+    # -----------------------------------------------------------------
+    - name: Report blocked ports
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "Host: {{ inventory_hostname }} ({{ ansible_network_os | default('unknown') }})"
+          - "Blocked ports found: {{ blocked_ports | default([]) | length }}"
+          - "--------------------------------------------"
+          - "{{ blocked_ports | default(['  (none)']) | join('\n') }}"
+          - "============================================"
+
+- name: STP Blocking Summary
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Build cross-device summary
+      ansible.builtin.set_fact:
+        blocking_summary: >-
+          {{ groups['all']
+             | map('extract', hostvars)
+             | selectattr('blocked_ports', 'defined')
+             | selectattr('blocked_ports', 'ne', [])
+             | map(attribute='inventory_hostname')
+             | list }}
+
+    - name: Display summary
+      ansible.builtin.debug:
+        msg:
+          - "=========================================="
+          - "    STP BLOCKING PORT SUMMARY             "
+          - "=========================================="
+          - "Devices with blocked ports: {{ blocking_summary | default([]) | join(', ') | default('None') }}"
+          - "Total devices scanned: {{ groups['all'] | length }}"
+          - "=========================================="
+          - ""
+          - "Tip: Use --limit to scope the report:"
+          - "  --limit campus_east         (by site)"
+          - "  --limit alcatel_edge      (by function)"
+          - "  --limit 'nexus:cisco'     (by vendor)"
+...

@@ -1,0 +1,94 @@
+---
+# VLAN 1 Enforcement
+#
+# Uses the ale.aos8.aos8_vlans resource module to declaratively enforce
+# VLAN 1 admin state as disabled. The resource module provides structured
+# before/after comparison and exact commands visibility.
+#
+# Usage:
+#   Audit (check mode shows what would change):
+#     ansible-playbook alcatel_vlan1_enforcement.yml -i inventory_alcatel --check
+#   Enforce:
+#     ansible-playbook alcatel_vlan1_enforcement.yml -i inventory_alcatel
+#   Gather current VLAN state only:
+#     ansible-playbook alcatel_vlan1_enforcement.yml -i inventory_alcatel --tags gather
+
+- name: VLAN 1 Enforcement -- Validate and Disable
+  hosts: alcatel
+  gather_facts: false
+
+  tasks:
+    # -----------------------------------------------------------------
+    # Gather current VLAN state
+    # -----------------------------------------------------------------
+    - name: Gather current VLAN configuration
+      tags:
+        - always
+      ale.aos8.aos8_vlans:
+        state: gathered
+      register: current_vlans
+
+    - name: Find VLAN 1 current state
+      tags:
+        - always
+      ansible.builtin.set_fact:
+        vlan1_state: >-
+          {{ current_vlans.gathered
+             | selectattr('vlan_id', 'equalto', 1)
+             | first | default({}) }}
+
+    - name: Display VLAN 1 status
+      tags:
+        - always
+      ansible.builtin.debug:
+        msg:
+          - "Host:   {{ inventory_hostname }}"
+          - "VLAN 1: {{ vlan1_state }}"
+          - "Admin:  {{ vlan1_state.admin | default('unknown') }}"
+          - "Status: {{ 'COMPLIANT' if vlan1_state.admin | default('') == 'disable' else 'VIOLATION -- admin state is not disabled' }}"
+
+    # -----------------------------------------------------------------
+    # Enforce VLAN 1 disabled
+    # -----------------------------------------------------------------
+    - name: Enforce VLAN 1 admin-state disable
+      ale.aos8.aos8_vlans:
+        config:
+          - vlan_id: 1
+            admin: disable
+        state: merged
+      register: vlan1_result
+
+    - name: "VLAN 1: state before change"
+      ansible.builtin.debug:
+        msg: "{{ vlan1_result.before | default([]) | to_nice_yaml }}"
+      when: vlan1_result.changed | default(false)
+
+    - name: "VLAN 1: state after change"
+      ansible.builtin.debug:
+        msg: "{{ vlan1_result.after | default([]) | to_nice_yaml }}"
+      when: vlan1_result.changed | default(false)
+
+    - name: "VLAN 1: commands applied (or would be in check mode)"
+      ansible.builtin.debug:
+        msg: "{{ vlan1_result.commands }}"
+      when: vlan1_result.commands | default([]) | length > 0
+
+    - name: "VLAN 1: already compliant"
+      ansible.builtin.debug:
+        msg: "VLAN 1 admin-state already disabled on {{ inventory_hostname }}."
+      when: not vlan1_result.changed | default(false)
+
+- name: VLAN 1 Compliance Summary
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Display compliance summary
+      ansible.builtin.debug:
+        msg:
+          - "=========================================="
+          - "       VLAN 1 ENFORCEMENT REPORT          "
+          - "=========================================="
+          - "All devices checked. Review per-host output above."
+          - "Devices with VLAN 1 violations were auto-remediated."
+          - "=========================================="
+...

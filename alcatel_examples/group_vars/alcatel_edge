@@ -1,0 +1,4 @@
+---
+# Edge switches: STP priority 32768 (default/lowest priority tier)
+stp_bridge_priority: 32768
+device_role: "edge"

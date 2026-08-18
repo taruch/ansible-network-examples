@@ -1,0 +1,121 @@
+---
+# BPDU Guard -- Edge Switches
+#
+# Uses ale.aos8.aos8_command for port discovery and aos8_config for
+# applying BPDU guard. Automatically excludes ports connected to other
+# network devices (detected via LLDP) and LAG member ports.
+#
+# Usage:
+#   Preview:  ansible-playbook alcatel_bpdu_guard.yml -i inventory_alcatel --check
+#   Apply:    ansible-playbook alcatel_bpdu_guard.yml -i inventory_alcatel
+
+- name: Configure BPDU Guard on Edge Switches
+  hosts: alcatel_edge
+  gather_facts: false
+
+  tasks:
+    # -----------------------------------------------------------------
+    # PHASE 1: Discover port topology
+    # -----------------------------------------------------------------
+    - name: Gather port topology data
+      ale.aos8.aos8_command:
+        commands:
+          - show lldp remote-system
+          - show interfaces status
+          - show linkagg port
+      register: topology
+
+    # -----------------------------------------------------------------
+    # PHASE 2: Classify ports
+    # -----------------------------------------------------------------
+    - name: Identify ports connected to network devices (exclude from BPDU guard)
+      ansible.builtin.set_fact:
+        network_device_ports: >-
+          {{ topology.stdout[0].split('\n')
+             | select('regex', '(?i)(bridge|router)')
+             | map('regex_search', '(\d+/\d+/\d+)', '\1')
+             | select('string')
+             | map('first')
+             | unique
+             | list }}
+
+    - name: Identify LAG member ports (exclude -- handled at aggregate level)
+      ansible.builtin.set_fact:
+        lag_member_ports: >-
+          {{ topology.stdout[2].split('\n')
+             | select('regex', '\d+/\d+/\d+')
+             | map('regex_search', '(\d+/\d+/\d+)', '\1')
+             | select('string')
+             | map('first')
+             | unique
+             | list }}
+
+    - name: Identify all physical ports
+      ansible.builtin.set_fact:
+        all_ports: >-
+          {{ topology.stdout[1].split('\n')
+             | select('regex', '^\s*\d+/\d+/\d+')
+             | map('regex_search', '(\d+/\d+/\d+)', '\1')
+             | select('string')
+             | map('first')
+             | unique
+             | list }}
+
+    - name: Calculate edge-facing ports (BPDU guard candidates)
+      ansible.builtin.set_fact:
+        edge_ports: >-
+          {{ all_ports
+             | difference(network_device_ports)
+             | difference(lag_member_ports)
+             | list }}
+
+    # -----------------------------------------------------------------
+    # PHASE 3: Display plan
+    # -----------------------------------------------------------------
+    - name: Display BPDU guard plan
+      ansible.builtin.debug:
+        msg:
+          - "Host: {{ inventory_hostname }}"
+          - "Total ports:        {{ all_ports | length }}"
+          - "Network uplinks:    {{ network_device_ports }} (EXCLUDED)"
+          - "LAG members:        {{ lag_member_ports }} (EXCLUDED)"
+          - "Edge ports:         {{ edge_ports | length }} ports will get BPDU guard"
+
+    # -----------------------------------------------------------------
+    # PHASE 4: Apply BPDU guard to edge ports
+    # -----------------------------------------------------------------
+    - name: Build BPDU guard config lines
+      ansible.builtin.set_fact:
+        bpdu_guard_lines: >-
+          {{ edge_ports
+             | map('regex_replace', '^(.*)$', 'spantree port \1 bpdu-guard enable')
+             | list }}
+
+    - name: Show commands that will be applied
+      ansible.builtin.debug:
+        msg: "{{ bpdu_guard_lines }}"
+      when: edge_ports | length > 0
+
+    - name: Apply BPDU guard configuration
+      when: edge_ports | length > 0
+      ale.aos8.aos8_config:
+        lines: "{{ bpdu_guard_lines }}"
+      register: bpdu_change
+
+    - name: Display commands applied
+      ansible.builtin.debug:
+        msg: "{{ bpdu_change.commands }}"
+      when: bpdu_change.commands | default([]) | length > 0
+
+    # -----------------------------------------------------------------
+    # PHASE 5: Verify
+    # -----------------------------------------------------------------
+    - name: Confirm BPDU guard applied
+      when:
+        - not ansible_check_mode
+        - bpdu_change.changed | default(false)
+      ansible.builtin.debug:
+        msg: >-
+          BPDU guard applied to {{ edge_ports | length }} edge-facing ports.
+          {{ network_device_ports | length }} uplinks and {{ lag_member_ports | length }} LAG members excluded.
+...

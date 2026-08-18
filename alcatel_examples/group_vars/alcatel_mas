@@ -1,0 +1,4 @@
+---
+# MAS switches: STP priority 28672
+stp_bridge_priority: 28672
+device_role: "mas"

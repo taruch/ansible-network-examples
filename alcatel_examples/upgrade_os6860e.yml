@@ -1,0 +1,149 @@
+---
+# Firmware Upgrade -- Alcatel OS6860E-P48 Edge Switches
+#
+# Uses ale.aos8.aos8_command for device interrogation.
+# Stages firmware, upgrades, validates, and reports failures.
+# serial limits blast radius -- only 20% of switches upgrade at a time.
+#
+# Usage:
+#   Preview (check mode):  ansible-playbook upgrade_os6860e.yml -i inventory_alcatel --check
+#   Execute:               ansible-playbook upgrade_os6860e.yml -i inventory_alcatel
+#   Target one switch:     ansible-playbook upgrade_os6860e.yml -i inventory_alcatel --limit ce-edge-sw01
+
+- name: Firmware Upgrade - Alcatel OS6860E-P48
+  hosts: alcatel_edge
+  gather_facts: false
+  serial: "20%"
+
+  vars:
+    local_firmware_path: "./firmware/OS6860E/"
+    remote_working_dir: "/flash/working/"
+
+  tasks:
+    - name: Firmware Upgrade Workflow
+      block:
+        # -----------------------------------------------------------------
+        # STAGE 1: PRE-CHECKS
+        # -----------------------------------------------------------------
+        - name: Capture pre-upgrade state
+          ale.aos8.aos8_command:
+            commands:
+              - show microcode
+              - show running-directory
+              - show health
+          register: pre_checks
+
+        - name: Store current firmware version
+          ansible.builtin.set_fact:
+            current_version: "{{ pre_checks.stdout[0] }}"
+
+        - name: Skip if already on target version
+          ansible.builtin.meta: end_host
+          when: target_firmware_version in current_version
+
+        - name: Display upgrade plan
+          ansible.builtin.debug:
+            msg:
+              - "Host: {{ inventory_hostname }}"
+              - "Current: {{ current_version | regex_search('\\S+\\s+\\S+') }}"
+              - "Target:  {{ target_firmware_version }}"
+              - "{{ 'CHECK MODE -- no changes will be made' if ansible_check_mode else 'LIVE RUN -- upgrade will proceed' }}"
+
+        - name: Save running config before upgrade
+          when: not ansible_check_mode
+          ale.aos8.aos8_command:
+            commands:
+              - write memory
+
+        # -----------------------------------------------------------------
+        # STAGE 2: STAGE FIRMWARE
+        # -----------------------------------------------------------------
+        - name: Stage firmware images to working directory
+          when: not ansible_check_mode
+          ansible.netcommon.net_put:
+            src: "{{ item }}"
+            dest: "{{ remote_working_dir }}"
+          loop: "{{ query('fileglob', local_firmware_path + '*.*') }}"
+
+        - name: Copy running config to working directory
+          when: not ansible_check_mode
+          ale.aos8.aos8_command:
+            commands:
+              - copy running working
+
+        # -----------------------------------------------------------------
+        # STAGE 3: UPGRADE & RELOAD
+        # -----------------------------------------------------------------
+        - name: Reload into working directory
+          when: not ansible_check_mode
+          ale.aos8.aos8_command:
+            commands:
+              - reload working no rollback-timeout
+          async: 1
+          poll: 0
+
+        - name: Wait for switch to come back online
+          when: not ansible_check_mode
+          ansible.builtin.wait_for_connection:
+            delay: 120
+            timeout: 600
+
+        # -----------------------------------------------------------------
+        # STAGE 4: POST-UPGRADE VALIDATION
+        # -----------------------------------------------------------------
+        - name: Verify firmware version after reboot
+          when: not ansible_check_mode
+          ale.aos8.aos8_command:
+            commands:
+              - show microcode
+          register: post_upgrade
+
+        - name: Assert target version is running
+          when: not ansible_check_mode
+          ansible.builtin.assert:
+            that:
+              - target_firmware_version in post_upgrade.stdout[0]
+            fail_msg: >-
+              UPGRADE FAILED on {{ inventory_hostname }}.
+              Expected {{ target_firmware_version }}.
+            success_msg: "Upgraded to {{ target_firmware_version }}"
+
+        - name: Verify device health post-upgrade
+          when: not ansible_check_mode
+          ale.aos8.aos8_command:
+            commands:
+              - show health
+
+        - name: Record success
+          ansible.builtin.set_stats:
+            data:
+              upgrade_results: "{{ upgrade_results | default({}) | combine({inventory_hostname: 'SUCCESS'}) }}"
+
+      rescue:
+        - name: Record failure
+          ansible.builtin.set_stats:
+            data:
+              upgrade_results: "{{ upgrade_results | default({}) | combine({inventory_hostname: 'FAILED'}) }}"
+
+        - name: Log failure details
+          ansible.builtin.debug:
+            msg: "CRITICAL: Upgrade failed on {{ inventory_hostname }}. Manual intervention required."
+
+        - name: Fail explicitly for reporting
+          ansible.builtin.fail:
+            msg: "Firmware upgrade failed validation on {{ inventory_hostname }}."
+
+- name: Firmware Upgrade Report
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Display upgrade summary
+      ansible.builtin.debug:
+        msg:
+          - "=========================================="
+          - "       FIRMWARE UPGRADE REPORT            "
+          - "=========================================="
+          - "Target Version: {{ hostvars[groups['alcatel_edge'][0]]['target_firmware_version'] | default('N/A') }}"
+          - "Results: {{ upgrade_results | default('No upgrades attempted') }}"
+          - "=========================================="
+...

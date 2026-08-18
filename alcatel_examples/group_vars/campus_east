@@ -1,0 +1,20 @@
+---
+# Campus East site -- NPS servers
+# Primary = local Campus East server, Secondary = Campus West
+nps_primary:
+  name: "CE-NPS-01"
+  host: "10.1.1.100"
+  auth_port: 1812
+  acct_port: 1813
+  retransmit: 3
+  timeout: 5
+
+nps_secondary:
+  name: "CW-NPS-01"
+  host: "10.2.1.100"
+  auth_port: 1812
+  acct_port: 1813
+  retransmit: 3
+  timeout: 5
+
+site_name: "campus_east"

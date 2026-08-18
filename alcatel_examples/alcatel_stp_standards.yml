@@ -1,0 +1,86 @@
+---
+# Spanning Tree Priority Standards
+#
+# Uses ale.aos8.aos8_config for configuration changes and aos8_command
+# for state validation. Priority values come from group_vars by function:
+#   Edge switch: 32,768  (group_vars/alcatel_edge)
+#   MAS:         28,672  (group_vars/alcatel_mas)
+#   MDS:         24,576  (group_vars/alcatel_mds)
+#
+# Usage:
+#   Validate only:  ansible-playbook alcatel_stp_standards.yml -i inventory_alcatel --check
+#   Apply:          ansible-playbook alcatel_stp_standards.yml -i inventory_alcatel
+#   Target one tier: ansible-playbook alcatel_stp_standards.yml -i inventory_alcatel --limit alcatel_mds
+
+- name: Enforce Spanning Tree Priority Standards
+  hosts: alcatel
+  gather_facts: false
+
+  tasks:
+    # -----------------------------------------------------------------
+    # PHASE 1: Gather current STP state
+    # -----------------------------------------------------------------
+    - name: Capture current spanning tree configuration
+      ale.aos8.aos8_command:
+        commands:
+          - show spantree
+      register: stp_output
+
+    - name: Parse current bridge priority from output
+      ansible.builtin.set_fact:
+        current_stp_priority: >-
+          {{ stp_output.stdout[0] | regex_search('Bridge\s+Priority\s*[:=]\s*(\d+)', '\1') | default(['unknown']) | first }}
+
+    - name: Determine if STP priority needs correction
+      ansible.builtin.set_fact:
+        stp_needs_change: "{{ current_stp_priority | int != stp_bridge_priority | int }}"
+      when: current_stp_priority != 'unknown'
+
+    # -----------------------------------------------------------------
+    # PHASE 2: Report intended vs actual
+    # -----------------------------------------------------------------
+    - name: Display STP compliance status
+      ansible.builtin.debug:
+        msg:
+          - "Host:     {{ inventory_hostname }} ({{ device_role }})"
+          - "Current:  {{ current_stp_priority }}"
+          - "Required: {{ stp_bridge_priority }}"
+          - "Status:   {{ 'COMPLIANT' if not stp_needs_change | default(true) else 'OUT OF COMPLIANCE -- will correct' }}"
+
+    # -----------------------------------------------------------------
+    # PHASE 3: Apply correction if needed
+    # -----------------------------------------------------------------
+    - name: Set spanning tree bridge priority to standard
+      when: stp_needs_change | default(true)
+      ale.aos8.aos8_config:
+        lines:
+          - spantree msti 0 bridge priority {{ stp_bridge_priority }}
+      register: stp_change
+
+    - name: Display commands applied
+      ansible.builtin.debug:
+        msg: "{{ stp_change.commands }}"
+      when: stp_change.commands | default([]) | length > 0
+
+    # -----------------------------------------------------------------
+    # PHASE 4: Verify
+    # -----------------------------------------------------------------
+    - name: Verify spanning tree priority after change
+      when:
+        - stp_change.changed | default(false)
+        - not ansible_check_mode
+      ale.aos8.aos8_command:
+        commands:
+          - show spantree
+      register: post_stp
+
+    - name: Assert priority matches standard
+      when:
+        - stp_change.changed | default(false)
+        - not ansible_check_mode
+      ansible.builtin.assert:
+        that:
+          - stp_bridge_priority | string in post_stp.stdout[0]
+        fail_msg: "STP priority verification failed on {{ inventory_hostname }}"
+        success_msg: "STP priority set to {{ stp_bridge_priority }} for {{ device_role }} role"
+...
