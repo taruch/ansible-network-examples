@@ -3,3 +3,5 @@ collections:
   - name: ansible.network
   - name: ansible.scm
   - name: ansible.utils
+  - name: ale.aos8
+    source: https://galaxy.ansible.com
