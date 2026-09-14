@@ -1,0 +1,113 @@
+---
+# STP Blocking Port Report
+#
+# Queries spanning tree port state across targeted switches and reports
+# all ports currently in Blocking (BLK) state. Results are displayed
+# per-device and consolidated into a cross-device summary.
+#
+# Read-only -- no configuration changes are made.
+#
+# Usage:
+#   All switches:   ansible-playbook alcatel_stp_blocking_report.yml -i inventory_alcatel
+#   One site:       ansible-playbook alcatel_stp_blocking_report.yml -i inventory_alcatel --limit campus_east
+#   Edge only:      ansible-playbook alcatel_stp_blocking_report.yml -i inventory_alcatel --limit alcatel_edge
+#   Single switch:  ansible-playbook alcatel_stp_blocking_report.yml -i inventory_alcatel --limit ce-edge-sw01
+
+- name: STP Blocking Port Report - Gather
+  hosts: alcatel
+  gather_facts: false
+
+  tasks:
+    # -----------------------------------------------------------------
+    # PHASE 1: Gather STP port state
+    # -----------------------------------------------------------------
+    - name: Gather spanning tree port state
+      ale.aos8.aos8_command:
+        commands:
+          - show spantree ports
+      register: stp_output
+
+    # -----------------------------------------------------------------
+    # PHASE 2: Parse blocking ports
+    # -----------------------------------------------------------------
+    - name: Parse all STP port entries
+      ansible.builtin.set_fact:
+        all_stp_lines: >-
+          {{ stp_output.stdout[0].split('\n')
+             | select('regex', '^\s*\d+/\d+/\d+')
+             | list }}
+
+    - name: Identify ports in blocking state
+      ansible.builtin.set_fact:
+        blocking_lines: >-
+          {{ all_stp_lines
+             | select('regex', '(?i)\bBLK\b')
+             | list }}
+        blocking_port_ids: >-
+          {{ all_stp_lines
+             | select('regex', '(?i)\bBLK\b')
+             | map('regex_search', '(\d+/\d+/\d+)', '\1')
+             | select('string')
+             | map('first')
+             | list }}
+
+    # -----------------------------------------------------------------
+    # PHASE 3: Display per-device results
+    # -----------------------------------------------------------------
+    - name: Display per-device STP blocking summary
+      ansible.builtin.debug:
+        msg:
+          - "Host: {{ inventory_hostname }} ({{ device_role | default('unknown') }})"
+          - "Total STP ports: {{ all_stp_lines | length }}"
+          - "Blocking ports:  {{ blocking_port_ids | length }}"
+          - "{{ 'Blocking: ' + blocking_port_ids | join(', ') if blocking_port_ids | length > 0 else 'All ports forwarding' }}"
+
+    - name: Display blocking port details
+      ansible.builtin.debug:
+        msg: "{{ blocking_lines }}"
+      when: blocking_port_ids | length > 0
+
+    - name: Record blocking data for cross-device summary
+      ansible.builtin.set_stats:
+        data:
+          stp_blocking: "{{ {inventory_hostname: blocking_port_ids} }}"
+
+
+- name: STP Blocking Port Report - Summary
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Calculate summary statistics
+      ansible.builtin.set_fact:
+        total_devices: "{{ stp_blocking | default({}) | length }}"
+        total_blocking: >-
+          {{ stp_blocking | default({})
+             | dict2items
+             | map(attribute='value')
+             | map('length')
+             | sum }}
+
+    - name: Display report header
+      ansible.builtin.debug:
+        msg:
+          - "=========================================="
+          - "      STP BLOCKING PORT REPORT            "
+          - "=========================================="
+          - "Devices scanned:       {{ total_devices }}"
+          - "Total blocking ports:  {{ total_blocking }}"
+          - "=========================================="
+
+    - name: Display devices with blocking ports
+      ansible.builtin.debug:
+        msg: "{{ item.key }}: {{ item.value | join(', ') }} ({{ item.value | length }} port{{ 's' if item.value | length != 1 else '' }})"
+      loop: "{{ stp_blocking | default({}) | dict2items }}"
+      when: item.value | length > 0
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: All clear
+      ansible.builtin.debug:
+        msg: "No blocking ports detected across {{ total_devices }} devices."
+      when: total_blocking | int == 0
+...

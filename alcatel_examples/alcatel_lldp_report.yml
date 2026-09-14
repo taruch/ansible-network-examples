@@ -1,0 +1,184 @@
+---
+# LLDP Neighbor, LACP, and VLAN Report
+#
+# For each targeted switch, queries and correlates:
+#   1. LLDP neighbors on all ports
+#   2. LACP/LAG bundle membership for neighbor ports
+#   3. VLAN assignments on neighbor ports and their LAG bundles
+#
+# Uses ale.aos8.aos8_l2_interfaces (state: gathered) for structured
+# VLAN data rather than parsing raw CLI output.
+#
+# Read-only -- no configuration changes are made.
+#
+# Usage:
+#   All switches:   ansible-playbook alcatel_lldp_report.yml -i inventory_alcatel
+#   One site:       ansible-playbook alcatel_lldp_report.yml -i inventory_alcatel --limit campus_east
+#   Single switch:  ansible-playbook alcatel_lldp_report.yml -i inventory_alcatel --limit ce-edge-sw01
+
+- name: LLDP Neighbor, LACP, and VLAN Report
+  hosts: alcatel
+  gather_facts: false
+
+  tasks:
+    # -----------------------------------------------------------------
+    # PHASE 1: Gather data
+    # -----------------------------------------------------------------
+    - name: Gather LLDP and LACP data
+      ale.aos8.aos8_command:
+        commands:
+          - show lldp remote-system
+          - show linkagg port
+      register: topology
+
+    - name: Gather structured L2 interface (VLAN) data
+      ale.aos8.aos8_l2_interfaces:
+        state: gathered
+      register: l2_data
+
+    # -----------------------------------------------------------------
+    # PHASE 2: Parse LLDP neighbors
+    # -----------------------------------------------------------------
+    - name: Parse LLDP neighbor table entries
+      ansible.builtin.set_fact:
+        lldp_lines: >-
+          {{ topology.stdout[0].split('\n')
+             | select('regex', '^\s*\d+/\d+/\d+')
+             | list }}
+
+    - name: Extract unique LLDP neighbor ports
+      ansible.builtin.set_fact:
+        lldp_ports: >-
+          {{ lldp_lines
+             | map('regex_search', '(\d+/\d+/\d+)', '\1')
+             | select('string')
+             | map('first')
+             | unique
+             | list }}
+
+    # -----------------------------------------------------------------
+    # PHASE 3: Parse LAG membership and build port-to-LAG mapping
+    # -----------------------------------------------------------------
+    - name: Parse LAG port membership lines
+      ansible.builtin.set_fact:
+        lag_port_lines: >-
+          {{ topology.stdout[1].split('\n')
+             | select('regex', '\d+/\d+/\d+')
+             | list }}
+
+    - name: Extract LAG member port list
+      ansible.builtin.set_fact:
+        lag_member_ports: >-
+          {{ lag_port_lines
+             | map('regex_search', '(\d+/\d+/\d+)', '\1')
+             | select('string')
+             | map('first')
+             | unique
+             | list }}
+
+    # Build a port-to-LAG dict by extracting the port (X/X/X) and the
+    # LAG number (first standalone integer after removing the port) from
+    # each line of 'show linkagg port'.
+    - name: Build port-to-LAG mapping
+      ansible.builtin.set_fact:
+        port_to_lag: >-
+          {%- set ns = namespace(m={}) -%}
+          {%- for line in lag_port_lines -%}
+          {%-   set port = line | regex_search('(\d+/\d+/\d+)') -%}
+          {%-   set lag = (line | regex_replace('\d+/\d+/\d+', '') | regex_search('(\d+)')) -%}
+          {%-   if port and lag -%}
+          {%-     set ns.m = ns.m | combine({port: lag}) -%}
+          {%-   endif -%}
+          {%- endfor -%}
+          {{ ns.m }}
+
+    # -----------------------------------------------------------------
+    # PHASE 4: Correlate LLDP ports with LAG membership
+    # -----------------------------------------------------------------
+    - name: Classify LLDP neighbor ports by LAG membership
+      ansible.builtin.set_fact:
+        neighbors_in_lag: "{{ lldp_ports | intersect(lag_member_ports) | list }}"
+        neighbors_standalone: "{{ lldp_ports | difference(lag_member_ports) | list }}"
+
+    - name: Identify LAG IDs serving LLDP neighbor ports
+      ansible.builtin.set_fact:
+        neighbor_lag_ids: >-
+          {{ neighbors_in_lag
+             | map('extract', port_to_lag)
+             | unique
+             | list }}
+      when: neighbors_in_lag | length > 0
+
+    # -----------------------------------------------------------------
+    # PHASE 5: Filter structured VLAN data for neighbor ports and LAGs
+    # -----------------------------------------------------------------
+    # aos8_l2_interfaces gathered data returns a list of dicts:
+    #   {vlan_id, port_number, mode (tagged/untagged), port_type (port/linkagg)}
+    - name: Filter VLANs for standalone neighbor ports
+      ansible.builtin.set_fact:
+        standalone_vlans: >-
+          {{ l2_data.gathered | default([])
+             | selectattr('port_type', 'equalto', 'port')
+             | selectattr('port_number', 'in', neighbors_standalone)
+             | list }}
+      when: neighbors_standalone | length > 0
+
+    - name: Filter VLANs for LAG bundles serving neighbor ports
+      ansible.builtin.set_fact:
+        lag_vlans: >-
+          {{ l2_data.gathered | default([])
+             | selectattr('port_type', 'equalto', 'linkagg')
+             | selectattr('port_number', 'in', neighbor_lag_ids | default([]))
+             | list }}
+      when: neighbor_lag_ids | default([]) | length > 0
+
+    # -----------------------------------------------------------------
+    # PHASE 6: Display report
+    # -----------------------------------------------------------------
+    - name: Display report header
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "Host: {{ inventory_hostname }} ({{ device_role | default('unknown') }})"
+          - "LLDP neighbors detected on {{ lldp_ports | length }} ports"
+          - "============================================"
+
+    - name: Display LLDP neighbor table
+      ansible.builtin.debug:
+        msg:
+          - "--- LLDP Neighbors ---"
+          - "{{ lldp_lines | join('\n') }}"
+      when: lldp_lines | length > 0
+
+    - name: Display LACP correlation
+      ansible.builtin.debug:
+        msg:
+          - "--- LACP Bundle Membership ---"
+          - "Ports in LAG bundles:  {{ neighbors_in_lag | default([]) | join(', ') | default('none', true) }}"
+          - "Ports standalone:      {{ neighbors_standalone | default([]) | join(', ') | default('none', true) }}"
+          - "LAG IDs for neighbors: {{ neighbor_lag_ids | default([]) | join(', ') | default('none', true) }}"
+
+    - name: Display LAG port details
+      ansible.builtin.debug:
+        msg:
+          - "--- LAG Port Details ---"
+          - "{{ lag_port_lines | join('\n') }}"
+      when: lag_port_lines | length > 0
+
+    - name: Display VLANs on standalone neighbor ports
+      ansible.builtin.debug:
+        msg:
+          - "--- VLANs on Standalone Neighbor Ports ---"
+          - "{{ standalone_vlans | default([]) | to_nice_yaml | default('No VLAN data', true) }}"
+
+    - name: Display VLANs on LAG bundles
+      ansible.builtin.debug:
+        msg:
+          - "--- VLANs on LAG Bundles (serving neighbor ports) ---"
+          - "{{ lag_vlans | default([]) | to_nice_yaml | default('No VLAN data', true) }}"
+
+    - name: No neighbors detected
+      ansible.builtin.debug:
+        msg: "No LLDP neighbors detected on {{ inventory_hostname }}"
+      when: lldp_lines | length == 0
+...

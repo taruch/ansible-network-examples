@@ -66,6 +66,8 @@ A device belongs to both a function group and a site group. For example, `ce-edg
 | `alcatel_bpdu_guard.yml` | `alcatel_edge` | Enable BPDU guard on edge-facing ports. Auto-excludes network device uplinks and LAG members via LLDP. |
 | `alcatel_local_accounts.yml` | `alcatel` | Ensure approved accounts exist, remove unauthorized accounts, rotate passwords. |
 | `alcatel_ddm.yml` | `alcatel` | Enable DDM and DDM traps on all ports with transceivers installed. |
+| `alcatel_stp_blocking_report.yml` | `alcatel` | Report all ports in STP Blocking state. Consolidates results into a cross-device summary. Read-only. |
+| `alcatel_lldp_report.yml` | `alcatel` | Correlated LLDP neighbor, LACP bundle, and VLAN report. Uses `aos8_l2_interfaces` (gathered) for structured VLAN data. Read-only. |
 
 ## Usage
 
@@ -86,6 +88,12 @@ ansible-playbook alcatel_ddm.yml -i inventory_alcatel --limit ce-edge-sw01
 
 # Rotate passwords (requires explicit tag):
 ansible-playbook alcatel_local_accounts.yml -i inventory_alcatel --tags all,rotate
+
+# Troubleshooting: STP blocking report across all edge switches:
+ansible-playbook alcatel_stp_blocking_report.yml -i inventory_alcatel --limit alcatel_edge
+
+# Troubleshooting: LLDP/LACP/VLAN report for a single switch:
+ansible-playbook alcatel_lldp_report.yml -i inventory_alcatel --limit ce-edge-sw01
 ```
 
 ## Playbook Pattern
