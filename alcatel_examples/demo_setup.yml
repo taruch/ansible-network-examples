@@ -1,0 +1,236 @@
+---
+# Network Targeting Demo - AAP Setup
+#
+# Creates a demo inventory with fake network devices, groups for each
+# targeting dimension, and a job template with a 5-dropdown survey.
+#
+# Usage:
+#   export CONTROLLER_HOST=https://your-aap-host
+#   export CONTROLLER_USERNAME=admin
+#   export CONTROLLER_PASSWORD=changeme
+#   ansible-playbook alcatel_examples/demo_setup.yml
+#
+# Prerequisites:
+#   - "Ansible Network Examples" project synced in AAP
+#   - "Demo Credential" exists (or change demo_credential below)
+#
+# After running:
+#   1. Open AAP → Templates → "TARGETING / Network Multi-Attribute Demo"
+#   2. Launch → select from the 5 survey dropdowns
+#   3. The playbook shows which devices matched the filter intersection
+
+- name: Create Network Targeting Demo in AAP
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  environment:
+    CONTROLLER_VERIFY_SSL: 'false'
+
+  vars:
+    controller:
+      host: '{{ lookup("env", "CONTROLLER_HOST") }}'
+      username: '{{ lookup("env", "CONTROLLER_USERNAME") }}'
+      password: '{{ lookup("env", "CONTROLLER_PASSWORD") }}'
+
+    demo_inventory: "Network Targeting Demo"
+    demo_organization: "Default"
+    demo_project: "Ansible Network Examples"
+    demo_credential: "Demo Credential"
+
+    # ------------------------------------------------------------------
+    # 24 fake devices: Alcatel + Extreme, 2 sites x 3 buildings
+    # ------------------------------------------------------------------
+    demo_hosts:
+      # --- Rose Hill - Building A ---
+      - { name: rh-a-mdr-01,  device_vendor: alcatel,  device_model: os6900_x20,   device_function: mdr,          device_site: rose_hill,       device_building: building_a }
+      - { name: rh-a-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: rose_hill,       device_building: building_a }
+      - { name: rh-a-mas-01,  device_vendor: alcatel,  device_model: os6860e_p48,  device_function: mas,          device_site: rose_hill,       device_building: building_a }
+      - { name: rh-a-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: rose_hill,       device_building: building_a }
+      - { name: rh-a-edge-02, device_vendor: alcatel,  device_model: os6850_p24,   device_function: edge_switch,  device_site: rose_hill,       device_building: building_a }
+      # --- Rose Hill - Building B ---
+      - { name: rh-b-mdr-01,  device_vendor: alcatel,  device_model: os6900_x20,   device_function: mdr,          device_site: rose_hill,       device_building: building_b }
+      - { name: rh-b-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: rose_hill,       device_building: building_b }
+      - { name: rh-b-mas-01,  device_vendor: alcatel,  device_model: os6860e_p48,  device_function: mas,          device_site: rose_hill,       device_building: building_b }
+      - { name: rh-b-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: rose_hill,       device_building: building_b }
+      - { name: rh-b-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: rose_hill,       device_building: building_b }
+      # --- Rose Hill - Building C ---
+      - { name: rh-c-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: rose_hill,       device_building: building_c }
+      - { name: rh-c-edge-01, device_vendor: alcatel,  device_model: os6850_p24,   device_function: edge_switch,  device_site: rose_hill,       device_building: building_c }
+      - { name: rh-c-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: rose_hill,       device_building: building_c }
+      # --- Lincoln Center - Building A ---
+      - { name: lc-a-mdr-01,  device_vendor: alcatel,  device_model: os6900_x20,   device_function: mdr,          device_site: lincoln_center,  device_building: building_a }
+      - { name: lc-a-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: lincoln_center,  device_building: building_a }
+      - { name: lc-a-mas-01,  device_vendor: alcatel,  device_model: os6860e_p48,  device_function: mas,          device_site: lincoln_center,  device_building: building_a }
+      - { name: lc-a-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: lincoln_center,  device_building: building_a }
+      - { name: lc-a-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: lincoln_center,  device_building: building_a }
+      # --- Lincoln Center - Building B ---
+      - { name: lc-b-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: lincoln_center,  device_building: building_b }
+      - { name: lc-b-edge-01, device_vendor: alcatel,  device_model: os6850_p24,   device_function: edge_switch,  device_site: lincoln_center,  device_building: building_b }
+      - { name: lc-b-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: lincoln_center,  device_building: building_b }
+      # --- Lincoln Center - Building C ---
+      - { name: lc-c-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: lincoln_center,  device_building: building_c }
+      - { name: lc-c-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: lincoln_center,  device_building: building_c }
+      - { name: lc-c-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: lincoln_center,  device_building: building_c }
+
+    # ------------------------------------------------------------------
+    # Groups — each maps one attribute value to a group name
+    # ------------------------------------------------------------------
+    demo_groups:
+      # Vendor
+      - { name: vendor_alcatel,      attr: device_vendor,   value: alcatel }
+      - { name: vendor_extreme,      attr: device_vendor,   value: extreme }
+      # Model
+      - { name: model_os6900_x20,    attr: device_model,    value: os6900_x20 }
+      - { name: model_os6860_p48,    attr: device_model,    value: os6860_p48 }
+      - { name: model_os6860e_p48,   attr: device_model,    value: os6860e_p48 }
+      - { name: model_os6850_p24,    attr: device_model,    value: os6850_p24 }
+      - { name: model_x460_g2,       attr: device_model,    value: x460_g2 }
+      # Function
+      - { name: role_mdr,            attr: device_function, value: mdr }
+      - { name: role_mds,            attr: device_function, value: mds }
+      - { name: role_mas,            attr: device_function, value: mas }
+      - { name: role_edge_switch,    attr: device_function, value: edge_switch }
+      # Site
+      - { name: site_rose_hill,      attr: device_site,     value: rose_hill }
+      - { name: site_lincoln_center, attr: device_site,     value: lincoln_center }
+      # Building
+      - { name: building_a,          attr: device_building, value: building_a }
+      - { name: building_b,          attr: device_building, value: building_b }
+      - { name: building_c,          attr: device_building, value: building_c }
+
+  tasks:
+    # ------------------------------------------------------------------
+    # Inventory
+    # ------------------------------------------------------------------
+    - name: Create demo inventory
+      ansible.controller.inventory:
+        name: "{{ demo_inventory }}"
+        organization: "{{ demo_organization }}"
+        description: "Fake network devices for multi-attribute targeting demo"
+        state: present
+
+    # ------------------------------------------------------------------
+    # Hosts
+    # ------------------------------------------------------------------
+    - name: Create demo hosts
+      ansible.controller.host:
+        name: "{{ item.name }}"
+        inventory: "{{ demo_inventory }}"
+        state: present
+        enabled: true
+        variables:
+          device_vendor: "{{ item.device_vendor }}"
+          device_model: "{{ item.device_model }}"
+          device_function: "{{ item.device_function }}"
+          device_site: "{{ item.device_site }}"
+          device_building: "{{ item.device_building }}"
+      loop: "{{ demo_hosts }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    # ------------------------------------------------------------------
+    # Groups — selectattr picks hosts matching each group's attribute
+    # ------------------------------------------------------------------
+    - name: Create groups and assign hosts
+      ansible.controller.group:
+        name: "{{ item.name }}"
+        inventory: "{{ demo_inventory }}"
+        state: present
+        hosts: >-
+          {{ demo_hosts
+             | selectattr(item.attr, 'equalto', item.value)
+             | map(attribute='name')
+             | list }}
+      loop: "{{ demo_groups }}"
+      loop_control:
+        label: "{{ item.name }} ({{ item.value }})"
+
+    # ------------------------------------------------------------------
+    # Job Template with 5-dropdown survey
+    # ------------------------------------------------------------------
+    - name: Create targeting job template
+      ansible.controller.job_template:
+        name: "TARGETING / Network Multi-Attribute Demo"
+        description: >-
+          Target network devices by vendor, model, role, site, and building.
+          Survey dropdowns build a host intersection pattern at runtime via Jinja2.
+        organization: "{{ demo_organization }}"
+        project: "{{ demo_project }}"
+        inventory: "{{ demo_inventory }}"
+        playbook: alcatel_examples/network_targeting_demo.yml
+        credentials:
+          - "{{ demo_credential }}"
+        job_type: run
+        verbosity: 0
+        ask_limit_on_launch: true
+        survey_enabled: true
+        survey_spec:
+          name: ""
+          description: ""
+          spec:
+            - variable: target_vendor
+              question_name: !unsafe "Target Vendor"
+              question_description: !unsafe "Filter by device vendor. Select 'all' to include all vendors."
+              type: multiplechoice
+              required: true
+              default: "all"
+              choices: "all\nalcatel\nextreme"
+              min: 0
+              max: 64
+              new_question: true
+            - variable: target_model
+              question_name: !unsafe "Target Model"
+              question_description: !unsafe "Filter by device model. Select 'all' to include all models."
+              type: multiplechoice
+              required: true
+              default: "all"
+              choices: "all\nos6900_x20\nos6860_p48\nos6860e_p48\nos6850_p24\nx460_g2"
+              min: 0
+              max: 64
+              new_question: false
+            - variable: target_role
+              question_name: !unsafe "Target Role"
+              question_description: !unsafe "Filter by device function. Select 'all' to include all roles."
+              type: multiplechoice
+              required: true
+              default: "all"
+              choices: "all\nmdr\nmds\nmas\nedge_switch"
+              min: 0
+              max: 64
+              new_question: false
+            - variable: target_site
+              question_name: !unsafe "Target Site"
+              question_description: !unsafe "Filter by physical site. Select 'all' to include all sites."
+              type: multiplechoice
+              required: true
+              default: "all"
+              choices: "all\nrose_hill\nlincoln_center"
+              min: 0
+              max: 64
+              new_question: false
+            - variable: target_building
+              question_name: !unsafe "Target Building"
+              question_description: !unsafe "Filter by building. Select 'all' to include all buildings."
+              type: multiplechoice
+              required: true
+              default: "all"
+              choices: "all\nbuilding_a\nbuilding_b\nbuilding_c"
+              min: 0
+              max: 64
+              new_question: false
+
+    - name: Done
+      ansible.builtin.debug:
+        msg:
+          - "Demo setup complete."
+          - "Inventory: {{ demo_inventory }} ({{ demo_hosts | length }} hosts, {{ demo_groups | length }} groups)"
+          - "Template:  TARGETING / Network Multi-Attribute Demo"
+          - ""
+          - "Demo scenarios to show:"
+          - "  1. All defaults (all) → 24 devices"
+          - "  2. vendor=alcatel → 19 Alcatel devices"
+          - "  3. vendor=alcatel, role=edge_switch → 9 Alcatel edge switches"
+          - "  4. vendor=alcatel, role=edge_switch, site=rose_hill → 5 Alcatel edge at Rose Hill"
+          - "  5. vendor=alcatel, model=os6860e_p48, site=rose_hill, building=building_a → 2 devices"
+          - "  6. vendor=extreme → 5 Extreme devices across all sites"
+...

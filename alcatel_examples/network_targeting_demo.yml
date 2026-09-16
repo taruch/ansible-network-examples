@@ -1,0 +1,53 @@
+---
+# Network Multi-Attribute Targeting Demo
+#
+# Uses Jinja2 in the hosts field to build intersection patterns at runtime
+# from AAP survey variables. Operators select from dropdowns (vendor, model,
+# role, site, building) and the playbook targets only the matching hosts.
+#
+# Requires inventory groups: vendor_*, model_*, role_*, site_*, building_*
+#
+# AAP Survey Variables:
+#   target_vendor   - "all" or a vendor name (alcatel, extreme)
+#   target_model    - "all" or a model (os6900_x20, os6860e_p48, etc.)
+#   target_role     - "all" or a device function (edge_switch, mdr, mds, mas)
+#   target_site     - "all" or a site name (rose_hill, lincoln_center)
+#   target_building - "all" or a building name (building_a, building_b, building_c)
+
+- name: Network Multi-Attribute Targeting Demo
+  hosts: >-
+    {%- set pattern = [] -%}
+    {%- if target_vendor | default('all') != 'all' %}{% set _ = pattern.append('vendor_' ~ target_vendor) %}{% endif -%}
+    {%- if target_model | default('all') != 'all' %}{% set _ = pattern.append('model_' ~ target_model) %}{% endif -%}
+    {%- if target_role | default('all') != 'all' %}{% set _ = pattern.append('role_' ~ target_role) %}{% endif -%}
+    {%- if target_site | default('all') != 'all' %}{% set _ = pattern.append('site_' ~ target_site) %}{% endif -%}
+    {%- if target_building | default('all') != 'all' %}{% set _ = pattern.append('building_' ~ target_building) %}{% endif -%}
+    {{ pattern | join(':&') if pattern else 'all' }}
+  gather_facts: false
+
+  tasks:
+    - name: Show resolved target pattern
+      ansible.builtin.debug:
+        msg: >-
+          Targeting: vendor={{ target_vendor | default('all') }},
+          model={{ target_model | default('all') }},
+          role={{ target_role | default('all') }},
+          site={{ target_site | default('all') }},
+          building={{ target_building | default('all') }}
+      run_once: true
+
+    - name: Show matched devices
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }} |
+          vendor={{ device_vendor | default('n/a') }} |
+          model={{ device_model | default('n/a') }} |
+          role={{ device_function | default('n/a') }} |
+          site={{ device_site | default('n/a') }} |
+          building={{ device_building | default('n/a') }}
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: "Matched {{ ansible_play_hosts_all | length }} device(s)"
+      run_once: true
+...
