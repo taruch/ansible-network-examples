@@ -3,6 +3,6 @@ collections:
   - name: ansible.network
   - name: ansible.scm
   - name: ansible.utils
-  - name: ale.aos8
-    type: git
-    source: https://github.com/ale-nsa-team/ale.aos8.git
+  #- name: ale.aos8
+  #  type: git
+  #  source: https://github.com/ale-nsa-team/ale.aos8.git
