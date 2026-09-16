@@ -5,12 +5,13 @@
 # targeting dimension, and a job template with a 5-dropdown survey.
 #
 # Usage:
-#   export CONTROLLER_HOST=https://your-aap-host
-#   export CONTROLLER_USERNAME=admin
-#   export CONTROLLER_PASSWORD=changeme
-#   ansible-playbook alcatel_examples/demo_setup.yml
+#   ansible-navigator run -mstdout demo_setup.yml -vvv \
+#     --eei=quay.io/truch/ee25:1.3 \
+#     --penv=CONTROLLER_USERNAME --penv=CONTROLLER_PASSWORD \
+#     --penv=CONTROLLER_HOST --penv=CONTROLLER_VERIFY_SSL
 #
 # Prerequisites:
+#   - CONTROLLER_HOST, CONTROLLER_USERNAME, CONTROLLER_PASSWORD env vars set
 #   - "Ansible Network Examples" project synced in AAP
 #   - "Demo Credential" exists (or change demo_credential below)
 #
@@ -23,14 +24,18 @@
   hosts: localhost
   connection: local
   gather_facts: false
-  environment:
-    CONTROLLER_VERIFY_SSL: 'false'
+  module_defaults:
+    group/ansible.controller.controller:
+      controller_host: "https://{{ aap_hostname }}"
+      controller_oauthtoken: "{{ controller_oauthtoken | default(omit) }}"
+      validate_certs: "{{ aap_validate_certs }}"
+      request_timeout: 60
 
   vars:
-    controller:
-      host: '{{ lookup("env", "CONTROLLER_HOST") }}'
-      username: '{{ lookup("env", "CONTROLLER_USERNAME") }}'
-      password: '{{ lookup("env", "CONTROLLER_PASSWORD") }}'
+    aap_username: "{{ lookup('env', 'CONTROLLER_USERNAME') }}"
+    aap_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') }}"
+    aap_hostname: "{{ lookup('env', 'CONTROLLER_HOST') }}"
+    aap_validate_certs: "{{ lookup('env', 'CONTROLLER_VERIFY_SSL') | default('false') }}"
 
     demo_inventory: "Network Targeting Demo"
     demo_organization: "Default"
@@ -41,36 +46,36 @@
     # 24 fake devices: Alcatel + Extreme, 2 sites x 3 buildings
     # ------------------------------------------------------------------
     demo_hosts:
-      # --- Rose Hill - Building A ---
-      - { name: rh-a-mdr-01,  device_vendor: alcatel,  device_model: os6900_x20,   device_function: mdr,          device_site: rose_hill,       device_building: building_a }
-      - { name: rh-a-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: rose_hill,       device_building: building_a }
-      - { name: rh-a-mas-01,  device_vendor: alcatel,  device_model: os6860e_p48,  device_function: mas,          device_site: rose_hill,       device_building: building_a }
-      - { name: rh-a-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: rose_hill,       device_building: building_a }
-      - { name: rh-a-edge-02, device_vendor: alcatel,  device_model: os6850_p24,   device_function: edge_switch,  device_site: rose_hill,       device_building: building_a }
-      # --- Rose Hill - Building B ---
-      - { name: rh-b-mdr-01,  device_vendor: alcatel,  device_model: os6900_x20,   device_function: mdr,          device_site: rose_hill,       device_building: building_b }
-      - { name: rh-b-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: rose_hill,       device_building: building_b }
-      - { name: rh-b-mas-01,  device_vendor: alcatel,  device_model: os6860e_p48,  device_function: mas,          device_site: rose_hill,       device_building: building_b }
-      - { name: rh-b-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: rose_hill,       device_building: building_b }
-      - { name: rh-b-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: rose_hill,       device_building: building_b }
-      # --- Rose Hill - Building C ---
-      - { name: rh-c-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: rose_hill,       device_building: building_c }
-      - { name: rh-c-edge-01, device_vendor: alcatel,  device_model: os6850_p24,   device_function: edge_switch,  device_site: rose_hill,       device_building: building_c }
-      - { name: rh-c-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: rose_hill,       device_building: building_c }
-      # --- Lincoln Center - Building A ---
-      - { name: lc-a-mdr-01,  device_vendor: alcatel,  device_model: os6900_x20,   device_function: mdr,          device_site: lincoln_center,  device_building: building_a }
-      - { name: lc-a-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: lincoln_center,  device_building: building_a }
-      - { name: lc-a-mas-01,  device_vendor: alcatel,  device_model: os6860e_p48,  device_function: mas,          device_site: lincoln_center,  device_building: building_a }
-      - { name: lc-a-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: lincoln_center,  device_building: building_a }
-      - { name: lc-a-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: lincoln_center,  device_building: building_a }
-      # --- Lincoln Center - Building B ---
-      - { name: lc-b-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: lincoln_center,  device_building: building_b }
-      - { name: lc-b-edge-01, device_vendor: alcatel,  device_model: os6850_p24,   device_function: edge_switch,  device_site: lincoln_center,  device_building: building_b }
-      - { name: lc-b-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: lincoln_center,  device_building: building_b }
-      # --- Lincoln Center - Building C ---
-      - { name: lc-c-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: lincoln_center,  device_building: building_c }
-      - { name: lc-c-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: lincoln_center,  device_building: building_c }
-      - { name: lc-c-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: lincoln_center,  device_building: building_c }
+      # --- Campus East - Building A ---
+      - { name: ce-a-mdr-01,  device_vendor: alcatel,  device_model: os6900_x20,   device_function: mdr,          device_site: campus_east,       device_building: building_a }
+      - { name: ce-a-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: campus_east,       device_building: building_a }
+      - { name: ce-a-mas-01,  device_vendor: alcatel,  device_model: os6860e_p48,  device_function: mas,          device_site: campus_east,       device_building: building_a }
+      - { name: ce-a-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: campus_east,       device_building: building_a }
+      - { name: ce-a-edge-02, device_vendor: alcatel,  device_model: os6850_p24,   device_function: edge_switch,  device_site: campus_east,       device_building: building_a }
+      # --- Campus East - Building B ---
+      - { name: ce-b-mdr-01,  device_vendor: alcatel,  device_model: os6900_x20,   device_function: mdr,          device_site: campus_east,       device_building: building_b }
+      - { name: ce-b-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: campus_east,       device_building: building_b }
+      - { name: ce-b-mas-01,  device_vendor: alcatel,  device_model: os6860e_p48,  device_function: mas,          device_site: campus_east,       device_building: building_b }
+      - { name: ce-b-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: campus_east,       device_building: building_b }
+      - { name: ce-b-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: campus_east,       device_building: building_b }
+      # --- Campus East - Building C ---
+      - { name: ce-c-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: campus_east,       device_building: building_c }
+      - { name: ce-c-edge-01, device_vendor: alcatel,  device_model: os6850_p24,   device_function: edge_switch,  device_site: campus_east,       device_building: building_c }
+      - { name: ce-c-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: campus_east,       device_building: building_c }
+      # --- Campus West - Building A ---
+      - { name: cw-a-mdr-01,  device_vendor: alcatel,  device_model: os6900_x20,   device_function: mdr,          device_site: campus_west,  device_building: building_a }
+      - { name: cw-a-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: campus_west,  device_building: building_a }
+      - { name: cw-a-mas-01,  device_vendor: alcatel,  device_model: os6860e_p48,  device_function: mas,          device_site: campus_west,  device_building: building_a }
+      - { name: cw-a-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: campus_west,  device_building: building_a }
+      - { name: cw-a-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: campus_west,  device_building: building_a }
+      # --- Campus West - Building B ---
+      - { name: cw-b-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: campus_west,  device_building: building_b }
+      - { name: cw-b-edge-01, device_vendor: alcatel,  device_model: os6850_p24,   device_function: edge_switch,  device_site: campus_west,  device_building: building_b }
+      - { name: cw-b-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: campus_west,  device_building: building_b }
+      # --- Campus West - Building C ---
+      - { name: cw-c-mds-01,  device_vendor: alcatel,  device_model: os6860_p48,   device_function: mds,          device_site: campus_west,  device_building: building_c }
+      - { name: cw-c-edge-01, device_vendor: alcatel,  device_model: os6860e_p48,  device_function: edge_switch,  device_site: campus_west,  device_building: building_c }
+      - { name: cw-c-edge-02, device_vendor: extreme,  device_model: x460_g2,      device_function: edge_switch,  device_site: campus_west,  device_building: building_c }
 
     # ------------------------------------------------------------------
     # Groups — each maps one attribute value to a group name
@@ -91,14 +96,34 @@
       - { name: role_mas,            attr: device_function, value: mas }
       - { name: role_edge_switch,    attr: device_function, value: edge_switch }
       # Site
-      - { name: site_rose_hill,      attr: device_site,     value: rose_hill }
-      - { name: site_lincoln_center, attr: device_site,     value: lincoln_center }
+      - { name: site_campus_east,      attr: device_site,     value: campus_east }
+      - { name: site_campus_west, attr: device_site,     value: campus_west }
       # Building
       - { name: building_a,          attr: device_building, value: building_a }
       - { name: building_b,          attr: device_building, value: building_b }
       - { name: building_c,          attr: device_building, value: building_c }
 
   tasks:
+    # ------------------------------------------------------------------
+    # Authenticate to AAP gateway
+    # ------------------------------------------------------------------
+    - name: Get authentication token from AAP gateway
+      ansible.builtin.uri:
+        url: "https://{{ aap_hostname }}/api/gateway/v1/tokens/"
+        user: "{{ aap_username }}"
+        password: "{{ aap_password }}"
+        method: POST
+        force_basic_auth: true
+        validate_certs: "{{ aap_validate_certs }}"
+        status_code: 201
+      register: authtoken_res
+      no_log: true
+
+    - name: Set OAuth token for subsequent tasks
+      ansible.builtin.set_fact:
+        controller_oauthtoken: "{{ authtoken_res.json.token }}"
+        controller_oauthtoken_url: "{{ authtoken_res.json.url }}"
+
     # ------------------------------------------------------------------
     # Inventory
     # ------------------------------------------------------------------
@@ -204,7 +229,7 @@
               type: multiplechoice
               required: true
               default: "all"
-              choices: "all\nrose_hill\nlincoln_center"
+              choices: "all\ncampus_east\ncampus_west"
               min: 0
               max: 64
               new_question: false
@@ -214,7 +239,7 @@
               type: multiplechoice
               required: true
               default: "all"
-              choices: "all\nbuilding_a\nbuilding_b\nbuilding_c"
+              choices: "all\na\nb\nc"
               min: 0
               max: 64
               new_question: false
@@ -230,7 +255,7 @@
           - "  1. All defaults (all) → 24 devices"
           - "  2. vendor=alcatel → 19 Alcatel devices"
           - "  3. vendor=alcatel, role=edge_switch → 9 Alcatel edge switches"
-          - "  4. vendor=alcatel, role=edge_switch, site=rose_hill → 5 Alcatel edge at Rose Hill"
-          - "  5. vendor=alcatel, model=os6860e_p48, site=rose_hill, building=building_a → 2 devices"
+          - "  4. vendor=alcatel, role=edge_switch, site=campus_east → 5 Alcatel edge at Campus East"
+          - "  5. vendor=alcatel, model=os6860e_p48, site=campus_east, building=building_a → 2 devices"
           - "  6. vendor=extreme → 5 Extreme devices across all sites"
 ...
